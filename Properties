@@ -1,0 +1,6 @@
+v3 includes:
+- New FilmUtilities.jl file to make things faster
+- finite Si layer
+- Proper photon absorption calculations
+- proper moss-burstein shift
+- changed response model to include epsIB that is Eg dependent
