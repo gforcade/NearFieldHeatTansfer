@@ -48,7 +48,7 @@ function heatLayersFunc(var1::Float64,var2::Float64)
     divProtCell = 1#ceil(Int,sqrt(d_prot*200))
     divNcell = 5# ceil(Int,sqrt(d_InAs_total*100))
     divPcell = 1 #ceil(Int,sqrt(d_InAsSbP_base*100))
-    divSubCell = 1
+    divSubCell = 4
     #mboxProter(x) = mboxish(x,divProtCell,d_prot/xMinProt)
     mboxProt = 0.0#find_zero(mboxProter,2.0,Order5())
     #mboxNer(x) = mboxish(x,divNcell,d_InAs_total/xMinN)
@@ -66,7 +66,7 @@ function heatLayersFunc(var1::Float64,var2::Float64)
     # Double check thread initialization.
     write(fileStream, "Julia initialized with "*string(nthreads())*" threads.\n\n")
     write(fileStream,string(xMinN)*" "*string(xMinP)*" "*string(xMinSub)*" "*string(xMinProt)*" xMin for mbox meshing. InAs, Q, Substrate, Prot respectively. \n")
-    write(fileStream,string(divNcell)*" "*string(divPcell)*" "*string(divSubCell)*" "*string(divProtCell)*" of slices for InAs, Q, and Substrate, Prot respectively.\n")
+    write(fileStream,string(divProtCell)*" "*string(divNcell)*" "*string(divPcell)*" "*string(divSubCell)*" of slices for Prot, InAs, Q, and Substrate respectively.\n")
     # building simulations structure 
     (lVar, lPairs) = uOttawaSlabs_v3_1(Radiator_T, 300.0, divProtCell, divNcell, divPcell, divSubCell, d_firstgap, d_Rad, d_gap, d_prot, d_InAs_total, d_InAsSbP_base, d_InAs_sub, Si_ndoping, prot_ndoping, ndoping_InAs, pdoping_InAs, quat_x, prot_quat_x, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
     ##  energy interval
