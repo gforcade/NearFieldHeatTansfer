@@ -100,8 +100,8 @@ precompile(BM,(Float64,Float64,Float64,Float64,Float64))
     #InAs parameters
     eps_inf_InAs = 12.3
     g = 2.89*10.0^11  #s^(-1), gamma
-    o_TO = 4.12*10.0^(13) #s^(-1)
-    o_LO = 4.58*10.0^(13)
+    o_TO = 4.12*10.0^(13) #s^(-1) #0.0271 [eV]
+    o_LO = 4.58*10.0^(13) #0.0301 [eV]
     o_p_square=N_base*e^2/(eps_0*eps_inf_InAs*mstar) #s^(-2)
     return eps_inf_InAs*(1.0-o_p_square/(omega*(omega+ im*gamma))+(o_LO^2-o_TO^2)/(o_TO^2-omega^2-im*omega*g))
 end
