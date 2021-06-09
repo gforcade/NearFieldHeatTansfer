@@ -51,6 +51,7 @@ precompile(siRspBck, (Float64, Float64))
 	siEnrGap(tmp::Float64)::Float64 
 
 Temperature dependent energy gap for intrinsic silicon in electron volts.
+V. Alex, S. Finkbeiner, and J. Weber, “Temperature dependence of the indirect energy gap in crystalline silicon ARTICLES YOU MAY BE INTERESTED IN,” J. Appl. Phys., vol. 79, p. 6943, 1996, doi: 10.1063/1.362447
 """
 @inline function siEnrGap(tmp::Float64)::Float64 
 
