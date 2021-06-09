@@ -42,8 +42,8 @@ negligible in comparison to free carrier contributions.
 # Tsai, B. K. (2005). Modeling radiative properties of silicon with coatings and comparison with 
 # reflectance measurements. Journal of thermophysics and heat transfer, 19(4), 558-565. 
 @inline function siRspBck(enr::Float64, tmp::Float64)::ComplexF64
-
-	return ^(sqrt(4.565 + /(97.3, ^(3.648,2) - ^(/(enr * 1.24, muEv), 2))) + (-1.864 * ^(10, -4) + 5.394 * /(^(10, -3), ^(3.648,2) - ^(/(enr * 1.24, muEv), 2))) * tmp, 2) - /(^(hBEv * 1.0e13, 2), enr * (enr + im * 1.0e10 * hBEv))
+	#Gavin: Changed T -> T - 273.15  #equation from reference says T is in celsius 
+	return ^(sqrt(4.565 + /(97.3, ^(3.648,2) - ^(/(enr * 1.24, muEv), 2))) + (-1.864 * ^(10, -4) + 5.394 * /(^(10, -3), ^(3.648,2) - ^(/(enr * 1.24, muEv), 2))) * (tmp - 273.15), 2) - /(^(hBEv * 1.0e13, 2), enr * (enr + im * 1.0e10 * hBEv))
 end
 precompile(siRspBck, (Float64, Float64))
 """
@@ -54,7 +54,7 @@ Temperature dependent energy gap for intrinsic silicon in electron volts.
 """
 @inline function siEnrGap(tmp::Float64)::Float64 
 
-	return 1.17 - /(0.000473 * tmp^2.0, tmp + 636.0)
+	return 1.1692 - /(0.00049 * tmp^2.0, tmp + 655.0)
 end
 precompile(siEnrGap, (Float64, ))
 """
@@ -128,7 +128,7 @@ function prmMSi(tmp::Float64, dnr::dptDsc, acp::dptDsc)::siDsc
 	frmFnc(flvl) = frmZero(flvl, tmp, dnr, acp)
 	enrFrm = find_zero(frmFnc, /(siEnrGap(tmp), 2.0))
 
-	# Number of ionized acceptor and donor dopants (carriers), units cm^-3.
+	# Number of ionized acceptor and donor dopants (carriers), units cm^-3. #verified
 	cncDnr = dnrCcn(enrFrm, tmp, dnr)
 	cncAcp = acpCcn(enrFrm, tmp, acp)
 
@@ -163,8 +163,8 @@ function prmMSi(tmp::Float64, dnr::dptDsc, acp::dptDsc)::siDsc
 	mEffH = 0.37
 
 	# Conversion factors for donor and acceptor contributions.
-	dnrFac = /(cncDnr * hBEv^2 * ^(10.0, 9.0), mEffE * 0.5199895 * 55.26349406 * 0.01112265)
-	acpFac = /(cncAcp * hBEv^2 * ^(10.0, 9.0), mEffH * 0.5199895 * 55.26349406 * 0.01112265)
+	dnrFac = /(cncDnr * hBEv^2 * ^(10.0, 9.0), mEffE * 0.5199895 * 55.26349406 * 0.01112265) #verified
+	acpFac = /(cncAcp * hBEv^2 * ^(10.0, 9.0), mEffH * 0.5199895 * 55.26349406 * 0.01112265) #verified
 
 	return siDsc(tmp, dnrFac, acpFac, dnrDcy, acpDcy)
 end

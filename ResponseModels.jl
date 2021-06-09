@@ -15,6 +15,7 @@ const evJ = 1.602176565e-19
 const eps_0 = 8.8542*^(10,-12)
 const hbar = 1.05457*^(10,-34) #m2kg/s
 const kb = 8.617333*^(10,-5) #eV K-1
+const m_0 = 0.9109*^(10,-30)
 
 @inline function cstRsp(cst::ComplexF64, enr::Float64)::ComplexF64
 
@@ -104,6 +105,8 @@ struct InAsDsc
     T::Float64
 	mstar::Float64
 	mstar_ptype::Float64
+	mstar_ptype_hh::Float64
+	mstar_ptype_lh::Float64
 	gamma_ntype::Float64
 	gamma_ptype::Float64
 	E0_T_InAs_value::Float64
@@ -121,17 +124,19 @@ precompile(eVtoOmega, (Float64,))
 @inline function eps_InAs_struct(N0,T)
 	E0_T_InAs_value = E0_T_InAs(N0,T)
 	E0_T_InAs_value_ptype = E0_T_InAs_ptype(N0,T)
+	mstar= m_star(N0)
+	mstar_ptype_lh = 0.026*m_0
+	mstar_ptype_hh = 0.36*m_0
+	mstar_ptype = m_star_ptype(mstar_ptype_hh,mstar_ptype_lh)
 	gamma_ntype = Gamma_ntype(N0,T)
-	gamma_ptype = Gamma_ptype(N0,T)
-    mstar= m_star(N0)
-	mstar_ptype = m_star_ptype(N0)
+	gamma_ptype = Gamma_ptype(N0,T,mstar_ptype)
 	eps_inf = 12.3 #eps_inf parameter, same as in the gamma function
-	P = 8.58e-8		#eV cm #comes from same place as InAsSbP params 
-	Nc = 9.3301e16 #cm-3 #value from Sentaurus
+	P = 9.05e-8 #8.58e-8		#eV cm #comes from same place as InAsSbP params 
 	#calculating the fermi energy
+	Nc = 2.0*(3.0*E0_T_InAs_value*kb*T/(8.0*pi*P^2.0))^(3.0/2.0) #9.3301e16 #cm-3 #value from Sentaurus
 	res = optimize(t -> fermi(t,E0_T_InAs_value/(kb*T),pi^(1/2)/2*N0/(Nc*10.0^6)),[E0_T_InAs_value],Newton()) #Nc*1e6 because: from cm-3 to m-3
 	F = Optim.minimizer(res)[1]*kb*T + E0_T_InAs_value #fermi energy relative to valence band
-    return InAsDsc(N0,T,mstar,mstar_ptype,gamma_ntype,gamma_ptype,E0_T_InAs_value,E0_T_InAs_value_ptype,eps_inf,P,F)
+    return InAsDsc(N0,T,mstar,mstar_ptype,mstar_ptype_hh,mstar_ptype_lh,gamma_ntype,gamma_ptype,E0_T_InAs_value,E0_T_InAs_value_ptype,eps_inf,P,F)
 end
 precompile(eps_InAs_struct,(Float64,Float64))
 
@@ -139,7 +144,7 @@ precompile(eps_InAs_struct,(Float64,Float64))
      omega = eVtoOmega(E_photon)
      #o_angular = 5.38*10^14   #hbar*5.38*10^14/eV = 0.35eV
     #if(E_photon>InAsDsc_struct.E0_T_InAs_value)  #made just InAsDsc_struct be passed vs all the variables
-	return epsIB(omega,InAsDsc_struct.N0,InAsDsc_struct.T,InAsDsc_struct.E0_T_InAs_value,InAsDsc_struct.eps_inf,InAsDsc_struct.P,InAsDsc_struct.mstar_ptype,InAsDsc_struct.F,0.0) + epsFCL(omega,InAsDsc_struct.mstar,InAsDsc_struct.gamma_ntype,InAsDsc_struct.N0) - InAsDsc_struct.eps_inf #eps_inf to avoid double counting
+	return epsIB(omega,InAsDsc_struct.N0,InAsDsc_struct.T,InAsDsc_struct.E0_T_InAs_value,InAsDsc_struct.eps_inf,InAsDsc_struct.P,InAsDsc_struct.mstar_ptype_hh,InAsDsc_struct.mstar_ptype_lh,InAsDsc_struct.F,0.0) + epsFCL(omega,InAsDsc_struct.mstar,InAsDsc_struct.gamma_ntype,InAsDsc_struct.N0) - InAsDsc_struct.eps_inf #eps_inf to avoid double counting
 	#else
     #   return epsFCL(omega,InAsDsc_struct.mstar,InAsDsc_struct.gamma_ntype,InAsDsc_struct.N0)
     #end
@@ -151,7 +156,7 @@ precompile(eps_InAs_ntype_v2,(Float64,InAsDsc))
 	omega = eVtoOmega(E_photon)
 	#o_angular = 5.38*10^14   #hbar*5.38*10^14/eV = 0.35eV
 	#if(E_photon>InAsDsc_struct.E0_T_InAs_value_ptype)
-	return epsIB(omega,InAsDsc_struct.N0,InAsDsc_struct.T,InAsDsc_struct.E0_T_InAs_value_ptype,InAsDsc_struct.eps_inf,InAsDsc_struct.P,InAsDsc_struct.mstar_ptype,InAsDsc_struct.F,1.0) + epsFCL(omega,InAsDsc_struct.mstar_ptype,InAsDsc_struct.gamma_ptype,InAsDsc_struct.N0) - InAsDsc_struct.eps_inf #eps_inf to avoid double counting
+	return epsIB(omega,InAsDsc_struct.N0,InAsDsc_struct.T,InAsDsc_struct.E0_T_InAs_value_ptype,InAsDsc_struct.eps_inf,InAsDsc_struct.P,InAsDsc_struct.mstar_ptype_hh,InAsDsc_struct.mstar_ptype_lh,InAsDsc_struct.F,1.0) + epsFCL(omega,InAsDsc_struct.mstar_ptype,InAsDsc_struct.gamma_ptype,InAsDsc_struct.N0) - InAsDsc_struct.eps_inf #eps_inf to avoid double counting
 	#else
 	#   return epsFCL_ptype(omega,InAsDsc_struct.mstar_ptype,InAsDsc_struct.gamma_ptype,InAsDsc_struct.N0)
     #end

@@ -35,17 +35,17 @@ const t1 = 2.3
 const t2 = 3.0
 
 
-@inline function m_star_ptype(n) # change m_e according to MB shift
+@inline function m_star_ptype(m_hh,m_lh) # change m_e according to MB shift
     #term = 8.0*P_square/eV*hbar^2*(3.0*pi^2*n)^(2/3)/(3.0*m_e*E_g_InAs^2) 
-    return    m_h*m_0 #(1.0+(4.0*P_square/(3.0*E_g_InAs))*(1.0+term)^(-1/2))^(-1)*m_0
+    return    (m_hh^(3/2)+m_lh^(3/2))^(2/3) #(1.0+(4.0*P_square/(3.0*E_g_InAs))*(1.0+term)^(-1/2))^(-1)*m_0
 end 
-precompile(m_star_ptype, (Float64,))
+precompile(m_star_ptype, (Float64,Float64))
 
-@inline function Gamma_ptype(N_Base,T)
+@inline function Gamma_ptype(N_Base,T,m_star_ptype)
     mu_franc =  umin + (umax*(300.0/T)^t1-umin)/(1+(N_Base/(Nref*(T/300.0)^t2))^phi)#from Francoeur 
-    return e/(m_star_ptype(N_Base)*mu_franc*10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
+    return e/(m_star_ptype*mu_franc*10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
 end
-precompile(Gamma_ptype, (Float64,Float64))
+precompile(Gamma_ptype, (Float64,Float64,Float64))
 
 @inline function E0_T_InAs_ptype(N0,T) 
     #delta_Eg_InAs = A_InAs*(N0/10^6)^(1/3) + B_InAs*(N0/10^6)^(1/4) + C_InAs*(N0/10^6)^(1/2)

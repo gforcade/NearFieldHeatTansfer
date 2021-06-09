@@ -71,7 +71,7 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 	## Optical models and absorption functions.
 	# Silicon emitter
 	acpDpt = dptDsc(0.045, 0.0)
-	dnrDpt = dptDsc(0.044, Si_ndoping/1.0e6)  #converting from m-3 to cm-3 for model convention
+	dnrDpt = dptDsc(0.0456, Si_ndoping/1.0e6)  #converting from m-3 to cm-3 for model convention
 
 	#calculates silicon model parameters for slab way above
 	siModParamsE_top = prmMSi(300.0, acpDpt, acpDpt)
@@ -97,13 +97,13 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 	# InAs
 	InAs_param_prot =eps_InAs_struct(prot_ndoping,300.0)
 	eps_InAs_prot(enr) = eps_InAsntype(enr,InAs_param)
-	abs_InAs_IBimag_prot(enr) = /(imag(epsIBEV(enr,InAs_param_prot.N0,InAs_param_prot.T,InAs_param_prot.E0_T_InAs_value,InAs_param_prot.eps_inf,InAs_param_prot.P,InAs_param_prot.mstar_ptype,InAs_param_prot.F,0.0)), enr)
+	abs_InAs_IBimag_prot(enr) = /(imag(epsIBEV(enr,InAs_param_prot.N0,InAs_param_prot.T,InAs_param_prot.E0_T_InAs_value,InAs_param_prot.eps_inf,InAs_param_prot.P,InAs_param_prot.mstar_ptype_hh,InAs_param_prot.mstar_ptype_lh,InAs_param_prot.F,0.0)), enr)
 
 	
 	# InAs N-type (PV Cell) doping concentration and temperature
 	InAs_param =eps_InAs_struct(ndoping_InAs,300.0)
 	eps_nInAs(enr) = eps_InAsntype(enr,InAs_param)
-	abs_nInAs_IBimag(enr) = /(imag(epsIBEV(enr,InAs_param.N0,InAs_param.T,InAs_param.E0_T_InAs_value,InAs_param.eps_inf,InAs_param.P,InAs_param.mstar_ptype,InAs_param.F,0.0)), enr)
+	abs_nInAs_IBimag(enr) = /(imag(epsIBEV(enr,InAs_param.N0,InAs_param.T,InAs_param.E0_T_InAs_value,InAs_param.eps_inf,InAs_param.P,InAs_param.mstar_ptype_hh,InAs_param.mstar_ptype_lh,InAs_param.F,0.0)), enr)
 	
 	# InAsSbP
 	InAsSbPstructure = InAsSbP_struct(quat_x,0.311*(1 - quat_x),pdoping_InAs,300.0)
@@ -115,7 +115,7 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 	# InAs p-type subtrate doping and temperature
 	pInAs_param = eps_InAs_struct(pdoping_InAs,300.0)
 	eps_pInAs(enr) = eps_InAsptype(enr,pInAs_param)
-	abs_pInAs_IBimag(enr) = /(imag(epsIBEV(enr,pInAs_param.N0,pInAs_param.T,pInAs_param.E0_T_InAs_value_ptype,pInAs_param.eps_inf,pInAs_param.P,pInAs_param.mstar_ptype,pInAs_param.F,1.0)), enr)
+	abs_pInAs_IBimag(enr) = /(imag(epsIBEV(enr,pInAs_param.N0,pInAs_param.T,pInAs_param.E0_T_InAs_value_ptype,pInAs_param.eps_inf,pInAs_param.P,pInAs_param.mstar_ptype_hh,pInAs_param.mstar_ptype_lh,pInAs_param.F,1.0)), enr)
 	
 	## Generate lists of optical responses and transfer factors.
 	optRsp = []

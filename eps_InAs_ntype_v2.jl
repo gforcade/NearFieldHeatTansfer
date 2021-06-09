@@ -98,10 +98,10 @@ precompile(BM,(Float64,Float64,Float64,Float64,Float64))
 
 @inline function epsFCL(omega,mstar,gamma,N_base)
     #InAs parameters
-    eps_inf_InAs = 12.3
-    g = 2.89*10.0^11  #s^(-1), gamma
-    o_TO = 4.12*10.0^(13) #s^(-1) #0.0271 [eV]
-    o_LO = 4.58*10.0^(13) #0.0301 [eV]
+    eps_inf_InAs = 12.3 
+    g = 9.23*10.0^11  #s^(-1), gamma #from Adachi, "Optical Constants of...", 1999
+    o_TO = 4.14*10.0^(13) #s^(-1) #0.0271 [eV] #from Adachi, "Properties of semiconductor and their alloys...", 2009
+    o_LO = 4.55*10.0^(13) #0.0301 [eV]
     o_p_square=N_base*e^2/(eps_0*eps_inf_InAs*mstar) #s^(-2)
     return eps_inf_InAs*(1.0-o_p_square/(omega*(omega+ im*gamma))+(o_LO^2-o_TO^2)/(o_TO^2-omega^2-im*omega*g))
 end
@@ -119,18 +119,18 @@ precompile(alpha_lh,(Float64,Float64,Float64,Float64))
 @inline function alpha_hh(omega,E0_T_InAs_value,eps_inf,P,mhh,k_om)
     #function for heavy hole band absorption #Anderson 1980 Eq. 16
     #the approximate version
-    #return (3/2*hbar_eV*omega*(hbar_eV*omega - E0_T_InAs_value))^(1/2)/(137*eps_inf^(1/2)*P*(1 + 3/(4*m_0*P^2)*e*100^2*hbar_eV^2*E0_T_InAs_value*(1 + m_0/mhh)*(2*hbar_eV*omega/E0_T_InAs_value - 1)))*100 #multiply by 100 to convert cm to m, and by e to convert eV to J
+    return (3/2*hbar_eV*omega*(hbar_eV*omega - E0_T_InAs_value))^(1/2)/(137*eps_inf^(1/2)*P*(1 + 3/(4*m_0*P^2)*e*100^2*hbar_eV^2*E0_T_InAs_value*(1 + m_0/mhh)*(2*hbar_eV*omega/E0_T_InAs_value - 1)))*100 #multiply by 100 to convert cm to m, and by e to convert eV to J
     #the exact version 
-    sqr = (1 + 8.0*(P/100.0)^2*(k_om/e)/(3.0*E0_T_InAs_value^2))^(1/2)
-    top = E0_T_InAs_value*(k_om/e)^(1/2)/(hbar_eV*omega*2.0)*(sqr + 1) #k from kg eV-1 s-2 to m-1
-    bot = 137*eps_inf^(1/2)*(1.0 + 3.0/4.0*hbar_eV^2*E0_T_InAs_value*e*(1 + m_0/mhh)*sqr/(m_0*(P/100.0)^2))
-    return top/bot 
+    #sqr = (1 + 8.0*(P/100.0)^2*(k_om/e)/(3.0*E0_T_InAs_value^2))^(1/2)
+    #top = E0_T_InAs_value*(k_om/e)^(1/2)/(hbar_eV*omega*2.0)*(sqr + 1) #k from kg eV-1 s-2 to m-1
+    #bot = 137*eps_inf^(1/2)*(1.0 + 3.0/4.0*hbar_eV^2*E0_T_InAs_value*e*(1 + m_0/mhh)*sqr/(m_0*(P/100.0)^2))
+    #return top/bot 
 end
 precompile(alpha_hh,(Float64,Float64,Float64,Float64,Float64,Float64))
 
 
 
-@inline function alpha_lb_2(omega,E0_T_InAs_value,eps_inf,P,mhh,T,F,n_or_p)
+@inline function alpha_lb_2(omega,E0_T_InAs_value,eps_inf,P,mhh,mlh,T,F,n_or_p)
     #total absorption coefficienct for IB
     if(hbar_eV*omega<=E0_T_InAs_value)
         #below bandgap, no absorption
@@ -139,27 +139,27 @@ precompile(alpha_hh,(Float64,Float64,Float64,Float64,Float64,Float64))
         #calculate k_omega^2 with units kg eV-1 s-2
         k_om = k_omega(omega,E0_T_InAs_value,P,mhh)
         if n_or_p == 0.0    #using moss-burstein effect when n_type
-            alpha_lb= (alpha_lh(omega,E0_T_InAs_value,eps_inf,P) + alpha_hh(omega,E0_T_InAs_value,eps_inf,P,mhh,k_om))*BM(omega,T,mhh,k_om,F)   #(3*10^8*(hbar_eV*omega-E0_T_InAs_value))^(1/2)*100 , legacy version
+            alpha_lb= alpha_lh(omega,E0_T_InAs_value,eps_inf,P)*BM(omega,T,mlh,k_om,F) + alpha_hh(omega,E0_T_InAs_value,eps_inf,P,mhh,k_om)*BM(omega,T,mhh,k_om,F)   #(3*10^8*(hbar_eV*omega-E0_T_InAs_value))^(1/2)*100 , legacy version
         else #p-type material, thus dont include moss-burstein effect
             alpha_lb= alpha_lh(omega,E0_T_InAs_value,eps_inf,P) + alpha_hh(omega,E0_T_InAs_value,eps_inf,P,mhh,k_om)
         end
     end
     return alpha_lb
 end
-precompile(alpha_lb_2,(Float64,Float64,Float64,Float64,Float64,Float64,Float64,Float64))
+precompile(alpha_lb_2,(Float64,Float64,Float64,Float64,Float64,Float64,Float64,Float64,Float64))
 
 
 
-function epsIB(omega,N0,T,E0_T_InAs_value,eps_inf,P,mhh,F,n_or_p)
+function epsIB(omega,N0,T,E0_T_InAs_value,eps_inf,P,mhh,mlh,F,n_or_p)
     #dielectric function from interband transitions
     # - n_or_p states if the material is n type (0.0) or p type (1.0)
     #extinction coefficient
-    alpha = alpha_lb_2(omega,E0_T_InAs_value,eps_inf,P,mhh,T,F,n_or_p)
+    alpha = alpha_lb_2(omega,E0_T_InAs_value,eps_inf,P,mhh,mlh,T,F,n_or_p)
     m_IB_pp = alpha*c/(2*omega)
-    #refractive index using kk_relations
+    #kk relations refractive index
     #integratedfn3(x) = (alpha_lb_2(x,E0_T_InAs_value,eps_inf,P,mhh,T,F,n_or_p) - alpha)/((x^2 - omega^2))
-    #m_IB_p_value = eps_inf^(1/2) - 0.6 + c/pi*quadgk(integratedfn3,1.0,1.0e10/hbar_eV,rtol=1e-6)[1] #-0.6 to make eps_inf at below bandgap frequencies (InAs ~0.06% error, InAs0.4SbP ~0.05% error)
-    #refractive index assuming its constant 
+    #m_IB_p_value = eps_inf^(1/2)  + c/pi*quadgk(integratedfn3,1.0,1.0e10/hbar_eV,rtol=1e-6)[1] - 0.53 #-0.6 to make eps_inf at below bandgap frequencies (InAs ~0.06% error, InAs0.4SbP ~0.05% error)
+    #constant refractive index 
     m_IB_p_value = eps_inf^(1/2)
     #dieletric form
     return (m_IB_p_value^2-m_IB_pp^2) + im*2*m_IB_p_value*m_IB_pp
@@ -168,12 +168,12 @@ precompile(epsIB,(Float64,Float64,Float64,Float64,Float64,Float64,Float64,Float6
 
 
 
-function epsIBEV(E_photon,N0,T,E0_T_InAs_value,eps_inf,P,mhh,F,n_or_p)
+function epsIBEV(E_photon,N0,T,E0_T_InAs_value,eps_inf,P,mhh,mlh,F,n_or_p)
     #changing input eV to omega for photon number calculations
     omega = /(E_photon,hbar_eV)
-    return epsIB(omega,N0,T,E0_T_InAs_value,eps_inf,P,mhh,F,n_or_p)
+    return epsIB(omega,N0,T,E0_T_InAs_value,eps_inf,P,mhh,mlh,F,n_or_p)
 end
-precompile(epsIBEV,(Float64,Float64,Float64,Float64,Float64,Float64,Float64,Float64,Float64))
+precompile(epsIBEV,(Float64,Float64,Float64,Float64,Float64,Float64,Float64,Float64,Float64,Float64))
 
 end
 

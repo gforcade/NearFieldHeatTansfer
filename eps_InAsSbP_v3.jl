@@ -142,10 +142,10 @@ eps_inf_InAs = 12.3
 eps_inf_InSb = 15.68
 eps_inf_InP = 9.66
 
-#eV cm
-P_InAs =  8.58e-8  #Paskov, "Refractive indices of InSb, InAs, GaSb, InAsSb , and InGaSb: Effects of free carriers" 1997
-P_InSb =  8.9e-8
-P_InP  = 8.7e-8     #guess, but seems like most materials areapproximately around this value 
+#eV cm      #Vurgaftman , "Band parameters for III–V compound semiconductors and their alloys", 2001 
+P_InAs =  9.05e-8  ##8.58e-8  ##Paskov, "Refractive indices of InSb, InAs, GaSb, InAsSb , and InGaSb: Effects of free carriers" 1997
+P_InSb =  9.42e-8  ##8.9e-8
+P_InP  =  8.88e-8     
 
 #cm-3 #all from sentaurus
 Nc_InAs = 9.3301e16 
@@ -175,12 +175,17 @@ precompile(E_T,(Float64,Float64,Float64))
 end
 precompile(func_f,(Float64,))
 
+@inline function m_star_ptype(m_hh,m_lh)
+    #calculates DOS m*_h 
+    return    (m_hh^(3/2)+m_lh^(3/2))^(2/3) 
+end 
+precompile(m_star_ptype, (Float64,Float64))
 
 #added this, to calculate gamma for InAsSbP
-@inline function Gamma_ntype_InAsSbP(x,y,N_Base,T)
+@inline function Gamma_ntype_InAsSbP(x,y,N_Base,T,m_star)
     
-    #InAs
-    me_InAs = 0.023*m_0
+    #InAs 
+    #me_InAs = 0.024*m_0 #Adachi "Properties of Semiconductors alloys," 2009
     umin_InAs = 1000.0
     umax_InAs = 34000.0
     Nref_InAs = 1.1*10^18*10^6 #in m^(-3) since N_base in m^(-3)
@@ -189,7 +194,7 @@ precompile(func_f,(Float64,))
     t2_InAs = 3.0
 
     #InSbP (same as Sentaurus)
-    me_InSbP = 0.063*m_0
+    #me_InSbP = 0.063*m_0 #Adachi "Properties of Semiconductors alloys," 2009
     umin_InSbP = 559.6
     umax_InSbP = 6756.9
     Nref_InSbP = 2.287*10^17*10^6 #in m^(-3) since N_base in m^(-3)
@@ -200,7 +205,7 @@ precompile(func_f,(Float64,))
     #InP
 
     #interpolated values
-    m_star = x*me_InAs + (1-x)*me_InSbP
+    #m_star = x*me_InAs + (1-x)*me_InSbP
     umin = (x/umin_InAs + (1-x)/umin_InSbP)
     umax = (x/umax_InAs + (1-x)/umax_InSbP)
     Nref = x*Nref_InAs + (1-x)*Nref_InSbP
@@ -211,12 +216,13 @@ precompile(func_f,(Float64,))
     mu_franc =  umin + (umax*(300.0/T)^t1-umin)/(1+(N_Base/(Nref*(T/300.0)^t2))^phi)#from Francoeur 
     return e/(m_star*mu_franc*10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
 end
-precompile(Gamma_ntype_InAsSbP, (Float64,Float64,Float64,Float64))
+precompile(Gamma_ntype_InAsSbP, (Float64,Float64,Float64,Float64,Float64))
 
-@inline function Gamma_ptype_InAsSbP(x,y,N_Base,T)
+
+@inline function Gamma_ptype_InAsSbP(x,y,N_Base,T,m_star)
     
     #InAs
-    me_InAs = 0.41*m_0
+    #me_InAs = 0.41*m_0
     umin_InAs = 1000.0
     umax_InAs = 34000.0
     Nref_InAs = 1.1*10^18*10^6 #in m^(-3) since N_base in m^(-3)
@@ -225,7 +231,7 @@ precompile(Gamma_ntype_InAsSbP, (Float64,Float64,Float64,Float64))
     t2_InAs = 3.0
 
     #InSbP (same as Sentaurus)
-    me_InSbP = 0.54*m_0
+    #me_InSbP = 0.54*m_0
     umin_InSbP = 13.87
     umax_InSbP = 208.8
     Nref_InSbP = 5.2203*10^17*10^6 #in m^(-3) since N_base in m^(-3)
@@ -234,7 +240,7 @@ precompile(Gamma_ntype_InAsSbP, (Float64,Float64,Float64,Float64))
     t2_InSbP = 2.907
 
     #interpolated values
-    m_star = x*me_InAs + (1-x)*me_InSbP
+    #m_star = x*me_InAs + (1-x)*me_InSbP
     umin = (x/umin_InAs + (1-x)/umin_InSbP)
     umax = (x/umax_InAs + (1-x)/umax_InSbP)
     Nref = x*Nref_InAs + (1-x)*Nref_InSbP
@@ -245,32 +251,20 @@ precompile(Gamma_ntype_InAsSbP, (Float64,Float64,Float64,Float64))
     mu_franc =  umin + (umax*(300.0/T)^t1-umin)/(1+(N_Base/(Nref*(T/300.0)^t2))^phi)#from Francoeur 
     return e/(m_star*mu_franc*10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
 end
-precompile(Gamma_ptype_InAsSbP, (Float64,Float64,Float64,Float64))
+precompile(Gamma_ptype_InAsSbP, (Float64,Float64,Float64,Float64,Float64))
 
 struct InAsSbPDsc
     x::Float64
     y::Float64
     N0::Float64
     T::Float64
-    A_InAsSbP::Float64
-    C_InAsSbP::Float64
-    D_InAsSbP::Float64
-    G_E0_InAsSbP::Float64 #No value found for Gamma_E1
-    G_E1_InAsSbP::Float64
-    G_Eg_InAsSbP::Float64
-    G_E2_InAsSbP::Float64
     E0_InAsSbP::Float64
-    E0Delta0_InAsSbP::Float64
-    E1_InAsSbP::Float64
-    E1Delta1_InAsSbP::Float64
-    Delta1_InAsSbP::Float64
-    E2_InAsSbP::Float64
-    Eg_InAsSbP::Float64
-    alpha_lc_InAsSbP::Float64
     gamma_ntype::Float64
     gamma_ptype::Float64
     mstar_ntype::Float64
     mstar_ptype::Float64
+    mstar_ptype_lh::Float64
+    mstar_ptype_hh::Float64
     epsinf::Float64
     P::Float64
     F::Float64
@@ -280,6 +274,7 @@ end
      #assume equal proportion of As,Sb and P
     #list of constants for InAsSbP, AD=InAs, BD=InSb, CD=InP ABC=AsSbP  #Cuevas Paper Table1
     #Bowing Constants for GaIn, AsSb from ZhangThermoConversion
+    #=
 	E0_T_InAs = E_T(E0_InAs,dt0_InAs,b0_InAs)
 	E0_T_InSb = E_T(E0_InSb,dt0_InSb,b0_InSb)
     #E0_T_InP = E_T(E0_InP,dt0_InP,b0_InP)
@@ -301,7 +296,6 @@ end
     G_E1 = func_Q2(x,y,G_E1_InAs,G_E1_InSb,G_E1_InP)
     G_Eg = func_Q2(x,y,G_Eg_InAs,G_Eg_InSb,G_Eg_InP)
     G_E2 = func_Q2(x,y,G_E2_InAs,G_E2_InSb,G_E2_InP)
-    E0 =  0.512 + 0.03*x - 0.183*x^2  #only good for InAsSbP lattice matched to InAs #func_Q2(x,y,E0_T_InAs,E0_T_InSb,E0_T_InP)    
     E0Delta0 = func_Q2(x,y,E0Delta0_T_InAs, E0Delta0_T_InSb,E0Delta0_InP) #no E0Delta0_T_InP
     E1 = func_Q2(x,y,E1_T_InAs,E1_T_InSb,E1_InP) #no E1_T_InP
     E1Delta1 = func_Q2(x,y,E1Delta1_T_InAs,E1Delta1_T_InSb,E1Delta1_InP)
@@ -309,19 +303,23 @@ end
     E2= func_Q2(x,y,E2_T_InAs,E2_T_InSb,E2_InP)
     Eg= func_Q2(x,y,Eg_T_InAs,Eg_T_InSb,Eg_InP)
     alpha_lc = func_Q2(x,y,alpha_lc_InAs,alpha_lc_InSb,alpha_lc_InP)
-    gamma_ntype = Gamma_ptype_InAsSbP(x,y,N0,T)
-    gamma_ptype = Gamma_ptype_InAsSbP(x,y,N0,T)
-    mstar_ntype = x*0.023*m_0 + (1-x)*0.063*m_0
-    mstar_ptype = x*0.41*m_0 + (1-x)*0.54*m_0
+    =#
+    E0 =  0.512 + 0.03*x - 0.183*x^2  #only good for InAsSbP lattice matched to InAs #func_Q2(x,y,E0_T_InAs,E0_T_InSb,E0_T_InP)    
+    mstar_ntype = func_Q2(x,y,0.024,0.013,0.07927)*m_0 #effective masses from Adachi, "Properties of Semiconductor alloys: ...," 2009
+    mstar_ptype_lh = func_Q2(x,y,0.026,0.014,0.11)*m_0
+	mstar_ptype_hh = func_Q2(x,y,0.36,0.38,0.69)*m_0
+    mstar_ptype = m_star_ptype(mstar_ptype_hh,mstar_ptype_lh)
+    gamma_ntype = Gamma_ntype_InAsSbP(x,y,N0,T,mstar_ntype)
+    gamma_ptype = Gamma_ptype_InAsSbP(x,y,N0,T,mstar_ptype)
     epsinf = func_Q2(x,y,eps_inf_InAs,eps_inf_InSb,eps_inf_InP)
     P = func_Q2(x,y,P_InAs,P_InSb,P_InP)
-    Nc = func_Q2(x,y,Nc_InAs,Nc_InSb,Nc_InP)
+    Nc = 2.0*(3.0*E0*kb*T/(8.0*pi*P^2.0))^(3.0/2.0) #func_Q2(x,y,Nc_InAs,Nc_InSb,Nc_InP)
     #calculating the fermi energy
 	res = optimize(t -> fermi(t,E0/(kb*T),pi^(1/2)/2*N0/(Nc*10.0^6)),[E0],Newton()) #Nc from cm-3 to m-3
 	F = Optim.minimizer(res)[1]*kb*T + E0 #fermi energy relative to the valence band
-    return InAsSbPDsc(x,y,N0,T,A,C,D,G_E0,G_E1,G_Eg,G_E2,E0,E0Delta0,E1,E1Delta1, Delta1, E2,Eg ,alpha_lc ,gamma_ntype ,gamma_ptype ,mstar_ntype ,mstar_ptype,epsinf,P,F)
+    return InAsSbPDsc(x,y,N0,T,E0,gamma_ntype ,gamma_ptype ,mstar_ntype ,mstar_ptype,mstar_ptype_lh,mstar_ptype_hh,epsinf,P,F)
 end
-precompile(InAsSbP_struct,(Float64,Float64,Float64,Float64))
+precompile(InAsSbP_struct,(Float64,Float64,Float64,Float64,))
 
 @inline function eVtoOmega(energy) #energy in eV
     return(energy*evJ/hbar)
@@ -334,7 +332,7 @@ precompile(eVtoOmega, (Float64,))
 
     #adding IB or no IB. IB - epsinf since I don't want to double count
     #if(E_photon>InAsSbPstruct.E0_InAsSbP)
-    return epsIB(eVtoOmega(E_photon),InAsSbPstruct.N0,InAsSbPstruct.T,InAsSbPstruct.E0_InAsSbP,InAsSbPstruct.epsinf,InAsSbPstruct.P,InAsSbPstruct.mstar_ptype,InAsSbPstruct.F,0.0) - InAsSbPstruct.epsinf + epsFCL_InAsSbP(InAsSbPstruct.x,InAsSbPstruct.y,eVtoOmega(E_photon),InAsSbPstruct.mstar_ntype,InAsSbPstruct.gamma_ntype,InAsSbPstruct.N0,InAsSbPstruct.epsinf)
+    return epsIB(eVtoOmega(E_photon),InAsSbPstruct.N0,InAsSbPstruct.T,InAsSbPstruct.E0_InAsSbP,InAsSbPstruct.epsinf,InAsSbPstruct.P,InAsSbPstruct.mstar_ptype_hh,InAsSbPstruct.mstar_ptype_lh,InAsSbPstruct.F,0.0) - InAsSbPstruct.epsinf + epsFCL_InAsSbP(InAsSbPstruct.x,InAsSbPstruct.y,eVtoOmega(E_photon),InAsSbPstruct.mstar_ntype,InAsSbPstruct.gamma_ntype,InAsSbPstruct.N0,InAsSbPstruct.epsinf)
     #else
     #    return epsFCL_InAsSbP(InAsSbPstruct.x,InAsSbPstruct.y,eVtoOmega(E_photon),InAsSbPstruct.mstar_ntype,InAsSbPstruct.gamma_ntype,InAsSbPstruct.N0,InAsSbPstruct.epsinf)
     #end
@@ -346,7 +344,7 @@ precompile(eps_InAsSbP_xy_ntype,(Float64,InAsSbPDsc))
     
     #adding the IB and FCL to eps
     #if(E_photon>InAsSbPstruct.E0_InAsSbP)
-    return epsIB(eVtoOmega(E_photon),InAsSbPstruct.N0,InAsSbPstruct.T,InAsSbPstruct.E0_InAsSbP,InAsSbPstruct.epsinf,InAsSbPstruct.P,InAsSbPstruct.mstar_ptype,InAsSbPstruct.F,1.0) - InAsSbPstruct.epsinf + epsFCL_InAsSbP(InAsSbPstruct.x,InAsSbPstruct.y,eVtoOmega(E_photon),InAsSbPstruct.mstar_ptype,InAsSbPstruct.gamma_ptype,InAsSbPstruct.N0,InAsSbPstruct.epsinf)
+    return epsIB(eVtoOmega(E_photon),InAsSbPstruct.N0,InAsSbPstruct.T,InAsSbPstruct.E0_InAsSbP,InAsSbPstruct.epsinf,InAsSbPstruct.P,InAsSbPstruct.mstar_ptype_hh,InAsSbPstruct.mstar_ptype_lh,InAsSbPstruct.F,1.0) - InAsSbPstruct.epsinf + epsFCL_InAsSbP(InAsSbPstruct.x,InAsSbPstruct.y,eVtoOmega(E_photon),InAsSbPstruct.mstar_ptype,InAsSbPstruct.gamma_ptype,InAsSbPstruct.N0,InAsSbPstruct.epsinf)
     #else
     #    return epsFCL_InAsSbP(InAsSbPstruct.x,InAsSbPstruct.y,eVtoOmega(E_photon),InAsSbPstruct.mstar_ptype,InAsSbPstruct.gamma_ptype,InAsSbPstruct.N0,InAsSbPstruct.epsinf)
     #end
@@ -359,7 +357,7 @@ precompile(eps_InAsSbP_xy_ptype,(Float64,InAsSbPDsc))
     #In the code InAs_xSb_yP_1-x-y,  from III-V Ternary and Quaternary Compounds Table 30.14 uses InP_xAs_ySb_1-x-y, and E0 = 0.512+0.030*y-0.183*y^2
     #E_bandgap = 0.512 + 0.030*InAsSbPstruct.x-0.183*InAsSbPstruct.x^2   
     if(enr>InAsSbPstruct.E0_InAsSbP)
-        return imag(epsIB(eVtoOmega(enr),InAsSbPstruct.N0,InAsSbPstruct.T,InAsSbPstruct.E0_InAsSbP,InAsSbPstruct.epsinf,InAsSbPstruct.P,InAsSbPstruct.mstar_ptype,InAsSbPstruct.F,1.0))
+        return imag(epsIB(eVtoOmega(enr),InAsSbPstruct.N0,InAsSbPstruct.T,InAsSbPstruct.E0_InAsSbP,InAsSbPstruct.epsinf,InAsSbPstruct.P,InAsSbPstruct.mstar_ptype_hh,InAsSbPstruct.mstar_ptype_lh,InAsSbPstruct.F,1.0))
     else
         return 0.0
     end
@@ -373,7 +371,7 @@ precompile(eps_InAsSbP_imag_xy_ptype,(Float64,InAsSbPDsc))
     #In the code InAs_xSb_yP_1-x-y,  from III-V Ternary and Quaternary Compounds Table 30.14 uses InP_xAs_ySb_1-x-y, and E0 = 0.512+0.030*y-0.183*y^2
     #E_bandgap = 0.512 + 0.030*InAsSbPstruct.x-0.183*InAsSbPstruct.x^2   
     if(enr>InAsSbPstruct.E0_InAsSbP)
-        return imag(epsIB(eVtoOmega(enr),InAsSbPstruct.N0,InAsSbPstruct.T,InAsSbPstruct.E0_InAsSbP,InAsSbPstruct.epsinf,InAsSbPstruct.P,InAsSbPstruct.mstar_ptype,InAsSbPstruct.F,0.0))
+        return imag(epsIB(eVtoOmega(enr),InAsSbPstruct.N0,InAsSbPstruct.T,InAsSbPstruct.E0_InAsSbP,InAsSbPstruct.epsinf,InAsSbPstruct.P,InAsSbPstruct.mstar_ptype_hh,InAsSbPstruct.mstar_ptype_lh,InAsSbPstruct.F,0.0))
     else
         return 0.0
     end
@@ -388,30 +386,30 @@ precompile(eps_InAsSbP_imag_xy_ntype,(Float64,InAsSbPDsc))
     #eps,gamma parameters from Sadao Adachi: Optical Properties of Crystalline and Amorphous Semiconductors (1999)
     #To and LO parameters: Adachi - Properties of semiconductor alloys
     #InAs
-    eps_inf_InAs = 12.3
-    g_InAs = 9.24*10.0^11  #s^(-1), gamma
-    o_TO_InAs = 4.14*10.0^(13) #s^(-1)
+    #eps_inf_InAs = 12.3
+    g_InAs = 9.23*10.0^11  #s^(-1), gamma 
+    o_TO_InAs = 4.14*10.0^(13) #s^(-1) 
     o_LO_InAs = 4.55*10.0^(13)
 
 
     #InSb
-    eps_inf_InSb = 15.68
-    g_InSb = 5.65*10.0^11  #s^(-1), gamma
-    o_TO_InSb = 3.39*10.0^(13) #s^(-1)
+    #eps_inf_InSb = 15.68
+    g_InSb = 5.41*10.0^11  #s^(-1), gamma
+    o_TO_InSb = 3.38*10.0^(13) #s^(-1)
     o_LO_InSb =3.59*10.0^(13)
 
 
     #InP
-    eps_inf_InP = 9.66
+    #eps_inf_InP = 9.66
     g_InP = 3.58*10.0^11  #s^(-1), gamma
     o_TO_InP = 5.74*10.0^(13) #s^(-1)
-    o_LO_InP = 6.53*10.0^(13)
+    o_LO_InP = 6.52*10.0^(13)
     
     
     o_p_square=N_base*e^2/(eps_0*eps_inf*mstar) #s^(-2)
     
     #first term is free carrier effect, the rest are the lattice effects, weiighted by the atom fraction
-    return eps_inf*(1.0 - o_p_square/(omega*(omega+ im*gamma))) + x*eps_inf_InAs*(o_LO_InAs^2-o_TO_InAs^2)/(o_TO_InAs^2-omega^2-im*omega*g_InAs)+y*eps_inf_InSb*(o_LO_InSb^2-o_TO_InSb^2)/(o_TO_InSb^2-omega^2-im*omega*g_InSb)+(1-x-y)*eps_inf_InP*(o_LO_InP^2-o_TO_InP^2)/(o_TO_InP^2-omega^2-im*omega*g_InP)
+    return eps_inf*(1.0 - o_p_square/(omega*(omega+ im*gamma)) + x*(o_LO_InAs^2-o_TO_InAs^2)/(o_TO_InAs^2-omega^2-im*omega*g_InAs)+y*(o_LO_InSb^2-o_TO_InSb^2)/(o_TO_InSb^2-omega^2-im*omega*g_InSb)+(1-x-y)*(o_LO_InP^2-o_TO_InP^2)/(o_TO_InP^2-omega^2-im*omega*g_InP))
 end
 precompile(epsFCL_InAsSbP,(Float64,Float64,Float64,Float64,Float64,Float64))
 end
