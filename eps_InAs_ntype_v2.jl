@@ -98,7 +98,7 @@ precompile(BM,(Float64,Float64,Float64,Float64,Float64))
 
 @inline function epsFCL(omega,mstar,gamma,N_base)
     #InAs parameters
-    eps_inf_InAs = 12.3 
+    eps_inf_InAs = 11.6 
     g = 9.23*10.0^11  #s^(-1), gamma #from Adachi, "Optical Constants of...", 1999
     o_TO = 4.14*10.0^(13) #s^(-1) #0.0271 [eV] #from Adachi, "Properties of semiconductor and their alloys...", 2009
     o_LO = 4.55*10.0^(13) #0.0301 [eV]

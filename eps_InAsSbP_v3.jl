@@ -138,19 +138,16 @@ G_Eg_InP=  0.8902957174564856
 
 
 #below are the new important parameters, everything else is not used
-eps_inf_InAs = 12.3
-eps_inf_InSb = 15.68
-eps_inf_InP = 9.66
+eps_inf_InAs = 11.6
+eps_inf_InSb = 15.3
+eps_inf_InP = 9.9
 
 #eV cm      #Vurgaftman , "Band parameters for III–V compound semiconductors and their alloys", 2001 
 P_InAs =  9.05e-8  ##8.58e-8  ##Paskov, "Refractive indices of InSb, InAs, GaSb, InAsSb , and InGaSb: Effects of free carriers" 1997
 P_InSb =  9.42e-8  ##8.9e-8
 P_InP  =  8.88e-8     
 
-#cm-3 #all from sentaurus
-Nc_InAs = 9.3301e16 
-Nc_InSb = 3.7195e16
-Nc_InP  = 5.6e17
+
 
 
 #Q Parameter in Notes

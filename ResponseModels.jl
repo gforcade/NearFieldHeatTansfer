@@ -130,7 +130,7 @@ precompile(eVtoOmega, (Float64,))
 	mstar_ptype = m_star_ptype(mstar_ptype_hh,mstar_ptype_lh)
 	gamma_ntype = Gamma_ntype(N0,T)
 	gamma_ptype = Gamma_ptype(N0,T,mstar_ptype)
-	eps_inf = 12.3 #eps_inf parameter, same as in the gamma function
+	eps_inf = 11.6 #eps_inf parameter, same as in the gamma function
 	P = 9.05e-8 #8.58e-8		#eV cm #comes from same place as InAsSbP params 
 	#calculating the fermi energy
 	Nc = 2.0*(3.0*E0_T_InAs_value*kb*T/(8.0*pi*P^2.0))^(3.0/2.0) #9.3301e16 #cm-3 #value from Sentaurus
