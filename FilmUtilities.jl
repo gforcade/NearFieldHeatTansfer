@@ -7,7 +7,7 @@ using FilmDataStructures
 export plcFnc, tfrIntEv!, heatTfr!
 ## Constants
 # Relative tolerance for cubature.
-const cubRelTol = 1.0e-3
+const cubRelTol = 1.0e-4
 # Cutoff for unbounded integrals tan and atan variable transforms.
 # tan(pi/2 - intDltInf) scaling. 
 # Use number smaller than 0.5e-4 for sub nanometer gaps. 
@@ -907,7 +907,7 @@ function heatTfr!(lVar::lyrDsc, lPairs::Array{Int64,2}, enrRng::Tuple{Float64,Fl
 	# Up to light line.
 	htPairs .= hcubature_v(numLPairs, tfrIntPRTH!, [enrRng[1],0.0], [enrRng[2],1.0], reltol = cubRelTol, error_norm = Cubature.L1)[1]
 	# Determine a safer absolute tolerance for further integral contributions.
-	cubAbsTol = 1.0e-1 * /(sum(htPairs), length(htPairs))
+	cubAbsTol = 1.0e-3 * /(sum(htPairs), length(htPairs))
 	# Light line to rapidly decaying transition point.	
 	htPairs .+= hcubature_v(numLPairs, tfrIntPRTH!, [enrRng[1],1.0], [enrRng[2],wvcDecTrns], reltol = cubRelTol, abstol = cubAbsTol, error_norm = Cubature.L1)[1]
 	# Transform transition point.
