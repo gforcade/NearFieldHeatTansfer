@@ -29,13 +29,13 @@ function heatLayersFunc(var1::Float64,var2::Float64)
     # T [K], d [um], dop [m-3]
     Radiator_T = var1 #700.0
     d_firstgap = 0.5
-    d_Rad = 20.0
+    d_Rad = 10.0
     d_gap = 0.1
     d_prot= 0.07
     d_InAs_total = 5.0
     d_InAsSbP_base = 1.5
     d_InAs_sub = 120.0
-    Si_ndoping = 1.0*(10.0^25)
+    Si_ndoping = 1.0*(10.0^26)
     ndoping_InAs = 3.0*(10.0^21)
     quat_x = 0.4  #smallest is best because of higher bandgap
     prot_quat_x = var2 #1.0
@@ -46,9 +46,9 @@ function heatLayersFunc(var1::Float64,var2::Float64)
     xMinP = 0.0
     xMinSub = 0.0
     divProtCell = 1#ceil(Int,sqrt(d_prot*200))
-    divNcell = 5# ceil(Int,sqrt(d_InAs_total*100))
+    divNcell = 1# ceil(Int,sqrt(d_InAs_total*100))
     divPcell = 1 #ceil(Int,sqrt(d_InAsSbP_base*100))
-    divSubCell = 4
+    divSubCell = 1
     #mboxProter(x) = mboxish(x,divProtCell,d_prot/xMinProt)
     mboxProt = 0.0#find_zero(mboxProter,2.0,Order5())
     #mboxNer(x) = mboxish(x,divNcell,d_InAs_total/xMinN)
@@ -61,35 +61,35 @@ function heatLayersFunc(var1::Float64,var2::Float64)
     ####
     ####simulations for total energy transfer
     # Open output file.
-    fName = "Results/Rad"*string(trunc(Int,round(Radiator_T)))*"fstGap"*string(trunc(Int,round(d_firstgap*1000)))*"Si"*string(trunc(Int,round(d_Rad*1000)))*"Dop"*string(round(Si_ndoping/1000000,sigdigits=1))*"Gap"*string(trunc(Int,round(d_gap*1000)))*"fsf"*string(trunc(Int,round(d_prot*1000)))*"As"*string(round(prot_quat_x,sigdigits=1))*"Dop"*string(round(prot_ndoping/1000000,sigdigits=1))*"InAs"*string(trunc(Int,round(d_InAs_total*1000)))*"Dop"*string(round(ndoping_InAs/1000000,sigdigits=1))*"Q"*string(trunc(Int,round(d_InAsSbP_base*1000)))*"As"*string(round(quat_x,sigdigits=1))*"Dop"*string(round(pdoping_InAs/1000000,sigdigits=1))*"Sub"*string(trunc(Int,round(d_InAs_sub*1000)))*"Dop"*string(round(pdoping_InAs/1000000,sigdigits=1))*".txt"
-    fileStream = open(fName,"w")
+    #fName = "Results/Rad"*string(trunc(Int,round(Radiator_T)))*"fstGap"*string(trunc(Int,round(d_firstgap*1000)))*"Si"*string(trunc(Int,round(d_Rad*1000)))*"Dop"*string(round(Si_ndoping/1000000,sigdigits=1))*"Gap"*string(trunc(Int,round(d_gap*1000)))*"fsf"*string(trunc(Int,round(d_prot*1000)))*"As"*string(round(prot_quat_x,sigdigits=1))*"Dop"*string(round(prot_ndoping/1000000,sigdigits=1))*"InAs"*string(trunc(Int,round(d_InAs_total*1000)))*"Dop"*string(round(ndoping_InAs/1000000,sigdigits=1))*"Q"*string(trunc(Int,round(d_InAsSbP_base*1000)))*"As"*string(round(quat_x,sigdigits=1))*"Dop"*string(round(pdoping_InAs/1000000,sigdigits=1))*"Sub"*string(trunc(Int,round(d_InAs_sub*1000)))*"Dop"*string(round(pdoping_InAs/1000000,sigdigits=1))*".txt"
+    #fileStream = open(fName,"w")
     # Double check thread initialization.
-    write(fileStream, "Julia initialized with "*string(nthreads())*" threads.\n\n")
+    print("Julia initialized with "*string(nthreads())*" threads.\n\n")
     ##  energy interval
-    enrRng = (0.01, 1.35)
+    enrRng = (0.01, 1.0)
     ## Begin program execution.
-    write(fileStream, "Execution:\n")
+    print("Execution:\n")
     stats = @timed (lVar, lPairs) = uOttawaSlabs_v3_1(Radiator_T, 300.0, divProtCell, divNcell, divPcell, divSubCell, d_firstgap, d_Rad, d_gap, d_prot, d_InAs_total, d_InAsSbP_base, d_InAs_sub, Si_ndoping, prot_ndoping, ndoping_InAs, pdoping_InAs, quat_x, prot_quat_x, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
-    write(fileStream, "Layer structure constructed in " * string(stats.time) * " s.\n")
+    print("Layer structure constructed in " * string(stats.time) * " s.\n")
     # Storage for energy transfer computations.
     htPairs = Array{Float64,1}(undef, size(lPairs)[2])
     # Compute heat transfer, using heat transfer function.
     stats = @timed heatTfr!(lVar, lPairs, enrRng, htPairs)
     #write cell sectioning parameters in heading
-    write(fileStream, "Generated excitation profile computed " * string(stats.time) * " s.\n")
-    write(fileStream,string(xMinN)*" "*string(xMinP)*" "*string(xMinSub)*" "*string(xMinProt)*" xMin for mbox meshing. InAs, Q, Substrate, Prot respectively. \n")
-    write(fileStream,string(divNcell)*" "*string(divPcell)*" "*string(divSubCell)*" "*string(divProtCell)*" of slices for InAs, Q, and Substrate, Prot respectively.\n\n")
+    print("Generated excitation profile computed " * string(stats.time) * " s.\n")
+    #write(fileStream,string(xMinN)*" "*string(xMinP)*" "*string(xMinSub)*" "*string(xMinProt)*" xMin for mbox meshing. InAs, Q, Substrate, Prot respectively. \n")
+    #write(fileStream,string(divNcell)*" "*string(divPcell)*" "*string(divSubCell)*" "*string(divProtCell)*" of slices for InAs, Q, and Substrate, Prot respectively.\n\n")
     # Output calculation results.
     println(sum(htPairs))
     # Write results to file.
-    write(fileStream, "Layer boundary edge (microns)	"*" Excitation Density Rate (W cm-2 microns-1)\n\n")
+    print("Layer boundary edge (microns)	"*" Excitation Density Rate (W cm-2 microns-1)\n\n")
     for ind = 1 : length(htPairs) - 1
-        write(fileStream,  string(round((lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,1]-1]),sigdigits=4))*" "*string(round(htPairs[ind]/((lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,ind]-1])),sigdigits=4)) * " \n")
+        print(string(round((lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,1]-1]),sigdigits=4))*" "*string(round(htPairs[ind]/((lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,ind]-1])),sigdigits=4)) * " \n")
     end
     #gold backing absorption
-    write(fileStream,  string(round((lVar.bdrLoc[lPairs[2,length(htPairs)-1]] - lVar.bdrLoc[lPairs[2,1]-1]),sigdigits=4))*" "*string(round(htPairs[length(htPairs)],sigdigits=4)) * " \n")
+    print(string(round((lVar.bdrLoc[lPairs[2,length(htPairs)-1]] - lVar.bdrLoc[lPairs[2,1]-1]),sigdigits=4))*" "*string(round(htPairs[length(htPairs)],sigdigits=4)) * " \n")
     # Flush file stream.
-    close(fileStream)
+    #close(fileStream)
     #
 
 

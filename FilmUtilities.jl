@@ -478,7 +478,7 @@ function tfrFlm!(lVar::lyrDsc, lPairs::Array{Int64,2}, enr::Float64, wvc::Float6
 		# Reset target index.
 		trgUInd = 1
 		# Determine target layers for particular source. 
-		trgLyrs = lPairs[2, findall(x -> x == srcLyr, lPairs[1, :])]
+		trgLyrs = sort(lPairs[2, findall(x -> x == srcLyr, lPairs[1, :])])
 
 		while trgLyr <= trgLyrs[end]
 
@@ -539,7 +539,7 @@ function tfrFunc!(lVar::lyrDsc, lPairs::Array{Int64,2}, enr::Float64, wvc::Float
 	pFacL = 0.0
 	pFacM = 0.0 + im * 0.0
 
-	for pr = 1:size(lPairs)[2]
+	for pr = 1 : size(lPairs)[2]
 		# Permittivity response. 
 		sRsp = lVar.rspPrf[lPairs[1, pr]](enr)
 		tRsp = lVar.rspPrf[lPairs[2, pr]](enr)
@@ -550,7 +550,8 @@ function tfrFunc!(lVar::lyrDsc, lPairs::Array{Int64,2}, enr::Float64, wvc::Float
 		# Account for possible finite thickness of source layer.
 		if (lPairs[1, pr] != 1) && (lPairs[1, pr] != length(lVar.tmpLst))
 
-			sLyrFac = (1.0 - exp(-4.0 * pi * imag(swv) * lyrTckRel(lVar, lPairs[1, pr], enr)))	
+			lTck = lyrTckRel(lVar, lPairs[1, pr], enr)
+			sLyrFac = 1.0 - exp(-4.0 * pi * imag(swv) * lTck)		
 		else
 
 			sLyrFac = 1.0
@@ -587,7 +588,7 @@ function tfrFunc!(lVar::lyrDsc, lPairs::Array{Int64,2}, enr::Float64, wvc::Float
 			tfrVal[pr] += 0.0
 		else
 			# Impose theoretical transfer cut off in case of numerical inaccuracy.
-			tfrVal[pr] += scl * wvc * (min(/(imag(lVar.rspPrf[lPairs[1,pr]](enr)) * imag(lVar.rspPrf[lPairs[2,pr]](enr)), real(lVar.tfrFac[lPairs[1,pr]](enr) * lVar.tfrFac[lPairs[2,pr]](enr))), /(real(lVar.tfrFac[lPairs[1,pr]](enr) * lVar.tfrFac[lPairs[2,pr]](enr)) * sLyrFac * pPol, 4.0 * imag(swv) * abs(swv)^2)) + min(/(imag(lVar.rspPrf[lPairs[1,pr]](enr)) * imag(lVar.rspPrf[lPairs[2,pr]](enr)), real(lVar.tfrFac[lPairs[1,pr]](enr) * lVar.tfrFac[lPairs[2,pr]](enr))), /(real(lVar.tfrFac[lPairs[1,pr]](enr) * lVar.tfrFac[lPairs[2,pr]](enr)) * sLyrFac * sPol, 4.0 * imag(swv) * abs(swv)^2)))
+			tfrVal[pr] += scl * wvc * (min(1.0, /(imag(lVar.rspPrf[lPairs[1,pr]](enr)) * imag(lVar.rspPrf[lPairs[2,pr]](enr)) * sLyrFac * pPol, 4.0 * imag(swv) * abs(swv)^2)) + min(1.0, /(imag(lVar.rspPrf[lPairs[1,pr]](enr)) * imag(lVar.tfrFac[lPairs[2,pr]](enr)) * sLyrFac * sPol, 4.0 * imag(swv) * abs(swv)^2)))
 		end
 	end
 
@@ -639,7 +640,7 @@ function tfrFncEDTH!(lVar::lyrDsc, lPairs::Array{Int64,2}, evlPts::Union{Array{F
 		# Include heat transfer prefactor J cm^-2
 		for lyrPair = 1:size(lPairs)[2]
 
-			tfrInt[lyrPair,evlInd] *= flxPfc(lVar, lPairs[:,lyrPair], evlPts[1,evlInd])
+			tfrInt[lyrPair,evlInd] *= flxPfc(lVar, lPairs[:,lyrPair], evlPts[1,evlInd]) * /(real(lVar.tfrFac[lPairs[1,lyrPair]](evlPts[1,evlInd])) * real(lVar.tfrFac[lPairs[2,lyrPair]](evlPts[1,evlInd])), imag(lVar.rspPrf[lPairs[1,lyrPair]](evlPts[1,evlInd])) * imag(lVar.rspPrf[lPairs[2,lyrPair]](evlPts[1,evlInd])))
 		end
 	end
 	
@@ -712,7 +713,7 @@ function tfrFncPRTH!(lVar::lyrDsc, lPairs::Array{Int64,2}, evlPts::Union{Array{F
 		# Include heat transfer prefactor J cm^-2
 		for lyrPair = 1:size(lPairs)[2]
 
-			tfrInt[lyrPair,evlInd] *= flxPfc(lVar, lPairs[:,lyrPair], evlPts[1,evlInd])
+			tfrInt[lyrPair,evlInd] *= flxPfc(lVar, lPairs[:,lyrPair], evlPts[1,evlInd]) * /(real(lVar.tfrFac[lPairs[1,lyrPair]](evlPts[1,evlInd])) * real(lVar.tfrFac[lPairs[2,lyrPair]](evlPts[1,evlInd])), imag(lVar.rspPrf[lPairs[1,lyrPair]](evlPts[1,evlInd])) * imag(lVar.rspPrf[lPairs[2,lyrPair]](evlPts[1,evlInd])))
 		end
 	end
 
@@ -867,6 +868,7 @@ function tfrIntEv!(lVar::lyrDsc, lPairs::Array{Int64,2}, enrPts::Union{StepRange
 		for lyrPair = 1:numLPairs
 
 			trgPts[lyrPair,enrInd] *= flxPfc(lVar, lPairs[:,lyrPair], enrPts[enrInd])
+			/(real(lVar.tfrFac[lPairs[1,lyrPair]](enrPts[enrInd])) * real(lVar.tfrFac[lPairs[2,lyrPair]](enrPts[enrInd])),imag(lVar.rspPrf[lPairs[1,lyrPair]](enrPts[enrInd])) * imag(lVar.rspPrf[lPairs[2,lyrPair]](enrPts[enrInd])))
 		end
 		next!(prog)
 	end
@@ -904,9 +906,8 @@ function heatTfr!(lVar::lyrDsc, lPairs::Array{Int64,2}, enrRng::Tuple{Float64,Fl
 	## Compute integrals.
 	# Up to light line.
 	htPairs .= hcubature_v(numLPairs, tfrIntPRTH!, [enrRng[1],0.0], [enrRng[2],1.0], reltol = cubRelTol, error_norm = Cubature.L1)[1]
-	#println(htPairs)
 	# Determine a safer absolute tolerance for further integral contributions.
-	cubAbsTol = 1.0e-1 * /(sum(htPairs), length(htPairs)) #was 1.0e-1
+	cubAbsTol = 1.0e-1 * /(sum(htPairs), length(htPairs))
 	# Light line to rapidly decaying transition point.	
 	htPairs .+= hcubature_v(numLPairs, tfrIntPRTH!, [enrRng[1],1.0], [enrRng[2],wvcDecTrns], reltol = cubRelTol, abstol = cubAbsTol, error_norm = Cubature.L1)[1]
 	# Transform transition point.

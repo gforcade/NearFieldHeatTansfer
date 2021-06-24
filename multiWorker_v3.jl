@@ -57,9 +57,9 @@ end
         xMinP = 0.0
         xMinSub = 0.0
         divProtCell = 1#ceil(Int,sqrt(d_prot*200))
-        divNcell = 5# ceil(Int,sqrt(d_InAs_total*100))
+        divNcell = 1# ceil(Int,sqrt(d_InAs_total*100))
         divPcell = 1 #ceil(Int,sqrt(d_InAsSbP_base*100))
-        divSubCell = ceil(Int,d_InAs_sub/5.0)
+        divSubCell = 1 #ceil(Int,d_InAs_sub/5.0)
         #mboxProter(x) = mboxish(x,divProtCell,d_prot/xMinProt)
         mboxProt = 0.0#find_zero(mboxProter,2.0,Order5())
         #mboxNer(x) = mboxish(x,divNcell,d_InAs_total/xMinN)
