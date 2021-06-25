@@ -1,4 +1,5 @@
 # - v3: calculates the total depth resolved heat transfer + photon number to cell
+# new structure
 
 @everywhere push!(LOAD_PATH,pwd())
 @everywhere begin
@@ -13,8 +14,8 @@ end
 
 
 # (CHANGE) sweeping over 2 parameters. Change parameters in heatLayersFunc as needed
-@everywhere sweep1 =  LinRange(400.0,900.0,11) 
-@everywhere sweep2 = LinRange(0.025,0.2,8)#[3.0, 6.0, 10.0, 30.0, 60.0, 100.0, 300.0, 600.0, 1000.0]*(10.0^21) 
+@everywhere sweep1 =  LinRange(5.0,30.0,6) 
+@everywhere sweep2 = [3.0, 6.0, 10.0, 30.0, 60.0, 100.0, 300.0, 600.0, 1000.0]*(10.0^24) 
 
 
 @everywhere function heatLayersFunc(var1::Float64,var2::Float64)
@@ -30,19 +31,19 @@ end
     end
 
     # T [K], d [um], dop [m-3]
-    Radiator_T = var1 #700.0
+    Radiator_T = 700.0
     d_firstgap = 0.5
-    d_Rad = 10.0
+    d_Rad = var1 #10.0
     d_gap = 0.1
-    d_prot= 0.07
+    d_prot= 0.1
     d_InAs_total = 5.0
-    d_InAsSbP_base = 1.0
+    d_InAsSbP_base = 2.0
     d_InAs_sub = 120.0
-    Si_ndoping = 1.0*(10.0^25)
+    Si_ndoping = var2 #1.0*(10.0^25)
     ndoping_InAs = 3.0*(10.0^21)
     quat_x = 0.4  #smallest is best because of higher bandgap
-    prot_quat_x = var2 #1.0
-    prot_ndoping = 5.0*(10.0^24)
+    prot_quat_x = 1.0
+    prot_ndoping = 3.0*(10.0^24)
     pdoping_InAs = 3.0*(10.0^24)  #highest is best (proven)
     
 
