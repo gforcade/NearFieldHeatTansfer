@@ -3,7 +3,7 @@
 push!(LOAD_PATH,pwd())
 
         
-using Base.Threads, ProgressMeter, LaTeXStrings, Roots
+using Base.Threads, ProgressMeter, LaTeXStrings, Roots,Dates
 using FilmDataStructures, FilmUtilities, ResponseModels, OttawaSlabCell_v3_1, OttawaSlabCell_v2, OttawaSlabCell_v3, OttawaSlabCell_v2_1
 const evJ = 1.6021774232052327e-19
 
@@ -61,9 +61,12 @@ function heatLayersFunc(var1::Float64,var2::Float64)
     ####
     ####simulations for total energy transfer
     # Open output file.
-    fName = "Spectral Heat Transfer/Rad"*string(trunc(Int,round(Radiator_T)))*"fstGap"*string(trunc(Int,round(d_firstgap*1000)))*"Si"*string(trunc(Int,round(d_Rad*1000)))*"Dop"*string(round(Si_ndoping/1000000,sigdigits=1))*"Gap"*string(trunc(Int,round(d_gap*1000)))*"fsf"*string(trunc(Int,round(d_prot*1000)))*"As"*string(round(prot_quat_x,sigdigits=1))*"Dop"*string(round(prot_ndoping/1000000,sigdigits=1))*"InAs"*string(trunc(Int,round(d_InAs_total*1000)))*"Dop"*string(round(ndoping_InAs/1000000,sigdigits=1))*"Q"*string(trunc(Int,round(d_InAsSbP_base*1000)))*"As"*string(round(quat_x,sigdigits=1))*"Dop"*string(round(pdoping_InAs/1000000,sigdigits=1))*"Sub"*string(trunc(Int,round(d_InAs_sub*1000)))*"Dop"*string(round(pdoping_InAs/1000000,sigdigits=1))*".txt"
+    fName = "C:\Users\gavin\OneDrive - University of Ottawa\Important School Files\TPV\Princeton Simulation\Simulation Results\\"
+    fName = fName*"Results From Dyson_v5\\"
+    fName = fName*"Spectral Heat Transfer/"*string(Dates.format(now(),"M_H_dd_mm_yyyy"))*".txt"
     fileStream = open(fName,"w")
     # Double check thread initialization.
+    write(fileStream,"Rad"*string(trunc(Int,round(Radiator_T)))*"fstGap"*string(trunc(Int,round(d_firstgap*1000)))*"Si"*string(trunc(Int,round(d_Rad*1000)))*"Dop"*string(round(Si_ndoping/1000000,sigdigits=1))*"Gap"*string(trunc(Int,round(d_gap*1000)))*"fsf"*string(trunc(Int,round(d_prot*1000)))*"As"*string(round(prot_quat_x,sigdigits=1))*"Dop"*string(round(prot_ndoping/1000000,sigdigits=1))*"InAs"*string(trunc(Int,round(d_InAs_total*1000)))*"Dop"*string(round(ndoping_InAs/1000000,sigdigits=1))*"Q"*string(trunc(Int,round(d_InAsSbP_base*1000)))*"As"*string(round(quat_x,sigdigits=1))*"Dop"*string(round(pdoping_InAs/1000000,sigdigits=1))*"Sub"*string(trunc(Int,round(d_InAs_sub*1000)))*"Dop"*string(round(pdoping_InAs/1000000,sigdigits=1))*" \n")
     write(fileStream, "Julia initialized with "*string(nthreads())*" threads.\n\n")
     write(fileStream,string(xMinN)*" "*string(xMinP)*" "*string(xMinSub)*" "*string(xMinProt)*" xMin for mbox meshing. InAs, Q, Substrate, Prot respectively. \n")
     write(fileStream,string(divProtCell)*" "*string(divNcell)*" "*string(divPcell)*" "*string(divSubCell)*" of slices for Prot, InAs, Q, and Substrate respectively.\n")
