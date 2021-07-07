@@ -49,6 +49,14 @@ end
     base_As=0.4  #smallest is best because of higher bandgap
 
 
+    #changing the parameters from sentaurus units to optical model units
+    #dop from cm-3 to m-3
+    Rad_dop = Rad_dop*1e6
+    fsf_dop = fsf_dop*1e6
+    emitter_dop = emitter_dop*1e6
+    base_dop = base_dop*1e6
+    substrate_dop = substrate_dop*1e6
+
     ####running simulations
     #file name
     fName = "Rad"*string(trunc(Int,round(Rad_T)))*"fstGap"*string(trunc(Int,round(firstgap_d*1000)))*"Si"*string(trunc(Int,round(Rad_d*1000)))*"Dop"*string(round(Rad_dop/1000000,sigdigits=1))*"Gap"*string(trunc(Int,round(gap_d*1000)))*"fsf"*string(trunc(Int,round(fsf_d*1000)))*"As"*string(round(fsf_As,sigdigits=1))*"Dop"*string(round(fsf_dop/1000000,sigdigits=1))*"InAs"*string(trunc(Int,round(emitter_d*1000)))*"Dop"*string(round(emitter_dop/1000000,sigdigits=1))*"Q"*string(trunc(Int,round(base_d*1000)))*"As"*string(round(base_As,sigdigits=1))*"Dop"*string(round(base_dop/1000000,sigdigits=1))*"Sub"*string(trunc(Int,round(substrate_d*1000)))*"Dop"*string(round(substrate_dop/1000000,sigdigits=1))*".txt"
