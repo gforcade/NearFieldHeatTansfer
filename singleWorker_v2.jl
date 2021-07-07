@@ -27,44 +27,43 @@ function heatLayersFunc(var1::Float64,var2::Float64)
     end
 
     # T [K], d [um], dop [m-3]
-    Radiator_T = var1 #700.0
+    Radiator_T = 700.0
     d_firstgap = 0.5
-    d_Rad = 20.0
+    d_Rad = 25.0
     d_gap = 0.1
-    d_prot= 0.07
+    d_prot= 0.01
     d_InAs_total = 5.0
-    d_InAsSbP_base = 1.5
+    d_InAsSbP_base = 2.0
     d_InAs_sub = 120.0
-    Si_ndoping = 1.0*(10.0^26)
+    Si_ndoping = 5.0*(10.0^25)
     ndoping_InAs = 3.0*(10.0^21)
     quat_x = 0.4  #smallest is best because of higher bandgap
-    prot_quat_x = var2 #1.0
-    prot_ndoping = 5.0*(10.0^24)
+    prot_quat_x = 1.0
+    prot_ndoping = 3.0*(10.0^23)
     pdoping_InAs = 3.0*(10.0^24)  #highest is best (proven)
-    xMinProt = 0.0
-    xMinN = 0.0
-    xMinP = 0.0
-    xMinSub = 0.0
-    divProtCell = 1#ceil(Int,sqrt(d_prot*200))
-    divNcell = 1# ceil(Int,sqrt(d_InAs_total*100))
-    divPcell = 1 #ceil(Int,sqrt(d_InAsSbP_base*100))
-    divSubCell = 1
-    #mboxProter(x) = mboxish(x,divProtCell,d_prot/xMinProt)
-    mboxProt = 0.0#find_zero(mboxProter,2.0,Order5())
-    #mboxNer(x) = mboxish(x,divNcell,d_InAs_total/xMinN)
-    mboxN = 0.0#find_zero(mboxNer,2.0,Order5())
-    #mboxPer(x) = mboxish(x,divPcell,d_InAsSbP_base/xMinP)
-    mboxP = 0.0#find_zero(mboxPer,2.0,Order5())
-    #mboxSuber(x) = mboxish(x,divSubCell,d_InAs_sub/xMinSub)
-    mboxSub = 0.0#find_zero(mboxSuber,2.0,Order5())
+    #output folder
+    fName = "Results From Dyson_v5\\"
+
     
     ####
     ####simulations for total energy transfer
     # Open output file.
-    fName = "C:\Users\gavin\OneDrive - University of Ottawa\Important School Files\TPV\Princeton Simulation\Simulation Results\\"
-    fName = fName*"Results From Dyson_v5\\"
+    fName = "C:\\Users\\gavin\\OneDrive - University of Ottawa\\Important School Files\\TPV\\Princeton Simulation\\Simulation Results\\"*fName
+    print(fName)
     fName = fName*"Spectral Heat Transfer/"*string(Dates.format(now(),"M_H_dd_mm_yyyy"))*".txt"
     fileStream = open(fName,"w")
+    xMinProt = 0.0
+    xMinN = 0.0
+    xMinP = 0.0
+    xMinSub = 0.0
+    divProtCell = 1
+    divNcell = 1
+    divPcell = 1 
+    divSubCell = 1
+    mboxProt = 0.0
+    mboxN = 0.0
+    mboxP = 0.0
+    mboxSub = 0.0
     # Double check thread initialization.
     write(fileStream,"Rad"*string(trunc(Int,round(Radiator_T)))*"fstGap"*string(trunc(Int,round(d_firstgap*1000)))*"Si"*string(trunc(Int,round(d_Rad*1000)))*"Dop"*string(round(Si_ndoping/1000000,sigdigits=1))*"Gap"*string(trunc(Int,round(d_gap*1000)))*"fsf"*string(trunc(Int,round(d_prot*1000)))*"As"*string(round(prot_quat_x,sigdigits=1))*"Dop"*string(round(prot_ndoping/1000000,sigdigits=1))*"InAs"*string(trunc(Int,round(d_InAs_total*1000)))*"Dop"*string(round(ndoping_InAs/1000000,sigdigits=1))*"Q"*string(trunc(Int,round(d_InAsSbP_base*1000)))*"As"*string(round(quat_x,sigdigits=1))*"Dop"*string(round(pdoping_InAs/1000000,sigdigits=1))*"Sub"*string(trunc(Int,round(d_InAs_sub*1000)))*"Dop"*string(round(pdoping_InAs/1000000,sigdigits=1))*" \n")
     write(fileStream, "Julia initialized with "*string(nthreads())*" threads.\n\n")

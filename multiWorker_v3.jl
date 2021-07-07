@@ -57,18 +57,14 @@ end
         xMinN = 0.0
         xMinP = 0.0
         xMinSub = 0.0
-        divProtCell = 1#ceil(Int,sqrt(d_prot*200))
-        divNcell = 1# ceil(Int,sqrt(d_InAs_total*100))
-        divPcell = 1 #ceil(Int,sqrt(d_InAsSbP_base*100))
-        divSubCell = 1 #ceil(Int,d_InAs_sub/5.0)
-        #mboxProter(x) = mboxish(x,divProtCell,d_prot/xMinProt)
-        mboxProt = 0.0#find_zero(mboxProter,2.0,Order5())
-        #mboxNer(x) = mboxish(x,divNcell,d_InAs_total/xMinN)
-        mboxN = 0.0#find_zero(mboxNer,2.0,Order5())
-        #mboxPer(x) = mboxish(x,divPcell,d_InAsSbP_base/xMinP)
-        mboxP = 0.0#find_zero(mboxPer,2.0,Order5())
-        #mboxSuber(x) = mboxish(x,divSubCell,d_InAs_sub/xMinSub)
-        mboxSub = 0.0#find_zero(mboxSuber,2.0,Order5())
+        divProtCell = 1
+        divNcell = 1
+        divPcell = 1 
+        divSubCell = 1 
+        mboxProt = 0.0
+        mboxN = 0.0
+        mboxP = 0.0
+        mboxSub = 0.0
         # Open output file.
         fileStream = open("Total Heat Transfer/"*fName,"w")
         # Double check thread initialization.
@@ -105,20 +101,43 @@ end
 
 
         ###### simulation for photon number
+        ##simulation run with no subdivisions for accurate absolute values
         xMinProt = 0.0
         xMinN = 0.0
         xMinP = 0.0
-        xMinSub = 0.5
+        xMinSub = d_InAs_sub
+        divProtCell = 1
+        divNcell = 1
+        divPcell = 1
+        divSubCell = 1
+        mboxProt = 0.0
+        mboxN = 0.0
+        mboxP = 0.0
+        mboxSub = 1.0
+        #energy interval
+        enrRng = (0.35, 1.0)
+        # Builds slab structure, generating lVar and lPairs.
+        # Arguments are: temperature of the emitter, background temperature, divisions of NCell
+        stats = @timed (lVar, lPairs) = uOttawaSlabs_v3(Radiator_T, 300.0, divProtCell, divNcell, divPcell, divSubCell, d_firstgap, d_Rad, d_gap, d_prot, d_InAs_total, d_InAsSbP_base, d_InAs_sub, Si_ndoping, prot_ndoping, ndoping_InAs, pdoping_InAs, quat_x, prot_quat_x, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
+        # Storage for photon number computations.
+        htPairs = Array{Float64,1}(undef, size(lPairs)[2])
+        # Compute number of generated photons using heat transfer function.
+        # Switch from flux values achieved through prefactors declared in uOttawaSlabStruct.jl.
+        stats = @timed heatTfr!(lVar, lPairs, enrRng, htPairs)
+        #copy ouput into new array to use later
+        htPairsNorm = copy(htPairs)
+
+        xMinProt = 0.0
+        xMinN = 0.0
+        xMinP = 0.0
+        xMinSub = 0.1
         divProtCell = ceil(Int,sqrt(d_prot*100))
         divNcell = ceil(Int,sqrt(d_InAs_total*100))
         divPcell = ceil(Int,sqrt(d_InAsSbP_base*100))
         divSubCell = 30
-        #mboxProter(x) = mboxish(x,divProtCell,d_prot/xMinProt)
-        mboxProt = 0.0#find_zero(mboxProter,2.0,Order5())
-        #mboxNer(x) = mboxish(x,divNcell,d_InAs_total/xMinN)
-        mboxN = 0.0#find_zero(mboxNer,2.0,Order5())
-        #mboxPer(x) = mboxish(x,divPcell,d_InAsSbP_base/xMinP)
-        mboxP = 0.0#find_zero(mboxPer,2.0,Order5())
+        mboxProt = 0.0
+        mboxN = 0.0
+        mboxP = 0.0
         mboxSuber(x) = mboxish(x,divSubCell,d_InAs_sub/xMinSub)
         mboxSub = find_zero(mboxSuber,2.0,Order5())
         # Open output file.
@@ -145,10 +164,22 @@ end
         write(fileStream,string(divNcell)*" "*string(divPcell)*" "*string(divSubCell)*" "*string(divProtCell)*" of slices for InAs, Q, and Substrate, Prot respectively.\n\n")
         # Write results to file.
         write(fileStream, "Depth (microns)	"*" Excitation Density Rate (cm-2 microns-1 s-1)\n\n")
-        # Location of cell boundary within the slab structure.
+        idxNorm = 1
+        extremes = [1,divProtCell]
         # Output calculation results.
         for ind = 1 : length(htPairs)
-            write(fileStream, string(round(htPairs[ind]/((lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,ind]-1])*evJ),sigdigits=4)) * " \n")
+            write(fileStream, string(round(htPairs[ind]/(sum(htPairs[extremes[1]:extremes[2]])*(lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,ind]-1])*evJ)*htPairsNorm[idxNorm],sigdigits=4)) * " \n")
+            #to go through all the layers
+            if ind == divProtCell || ind == divProtCell + divNcell || ind == divProtCell + divNcell + divPcell
+                idxNorm += 1 
+            end
+            if ind == divProtCell
+                extremes = [ind+1,ind + divNcell]
+            elseif ind == divProtCell + divNcell
+                extremes = [ind+1, ind + divPcell]
+            elseif ind == divProtCell + divNcell + divPcell
+                extremes = [ind+1,ind+divSubCell]
+            end
         end
         # Flush file stream.
         close(fileStream)
