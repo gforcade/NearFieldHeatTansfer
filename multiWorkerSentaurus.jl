@@ -75,24 +75,24 @@ end
         mboxN = 0.0
         mboxP = 0.0
         mboxSub = 0.0
+        enrRng = (0.01, 1.0) #energy interval
+        # Builds slab structure, generating lVar and lPairs.
+        # Arguments are: temperature of the emitter, background temperature, divisions of NCell
+        stats1 = @timed (lVar, lPairs) = uOttawaSlabs_v3_1(Rad_T, 300.0, divProtCell, divNcell, divPcell, divSubCell, firstgap_d, Rad_d, gap_d, fsf_d, emitter_d, base_d, substrate_d, Rad_dop, fsf_dop, emitter_dop, base_dop, base_As, fsf_As, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
+        # Storage for photon number computations.
+        htPairs = Array{Float64,1}(undef, size(lPairs)[2])
+        # Compute number of generated photons using heat transfer function.
+        # Switch from flux values achieved through prefactors declared in uOttawaSlabStruct.jl.
+        stats2 = @timed heatTfr!(lVar, lPairs, enrRng, htPairs)
         # Open output file.
         fileStream = open("Total Heat Transfer/"*fName,"w")
         # Double check thread initialization.
         write(fileStream, "Julia initialized with "*string(nthreads())*" threads.\n\n")
         ## External program settings, internal setting contained in uOttawaSlabStruct.jl
-        enrRng = (0.01, 1.0)
         ## Begin program execution.
         write(fileStream, "Execution:\n")
-        # Builds slab structure, generating lVar and lPairs.
-        # Arguments are: temperature of the emitter, background temperature, divisions of NCell
-        stats = @timed (lVar, lPairs) = uOttawaSlabs_v3_1(Rad_T, 300.0, divProtCell, divNcell, divPcell, divSubCell, firstgap_d, Rad_d, gap_d, fsf_d, emitter_d, base_d, substrate_d, Rad_dop, fsf_dop, emitter_dop, base_dop, base_As, fsf_As, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
-        write(fileStream, "Layer structure constructed in " * string(stats.time) * " s.\n")
-        # Storage for photon number computations.
-        htPairs = Array{Float64,1}(undef, size(lPairs)[2])
-        # Compute number of generated photons using heat transfer function.
-        # Switch from flux values achieved through prefactors declared in uOttawaSlabStruct.jl.
-        stats = @timed heatTfr!(lVar, lPairs, enrRng, htPairs)
-        write(fileStream, "Generated excitation profile computed " * string(stats.time) * " s.\n")
+        write(fileStream, "Layer structure constructed in " * string(stats1.time) * " s.\n")
+        write(fileStream, "Generated excitation profile computed " * string(stats2.time) * " s.\n")
         write(fileStream,string(xMinN)*" "*string(xMinP)*" "*string(xMinSub)*" "*string(xMinProt)*" xMin for mbox meshing. InAs, Q, Substrate, Prot respectively. \n")
         write(fileStream,string(divNcell)*" "*string(divPcell)*" "*string(divSubCell)*" "*string(divProtCell)*" of slices for InAs, Q, and Substrate, Prot respectively.\n\n")
         # Write results to file.
@@ -150,26 +150,25 @@ end
         mboxP = 0.0
         mboxSuber(x) = mboxish(x,divSubCell,substrate_d/xMinSub)
         mboxSub = find_zero(mboxSuber,2.0,Order5())
+        ## External program settings, internal setting contained in uOttawaSlabStruct.jl
+        enrRng = (0.35, 1.0)
+        # Builds slab structure, generating lVar and lPairs.
+        # Arguments are: temperature of the emitter, background temperature, divisions of NCell
+        stats1 = @timed (lVar, lPairs) = uOttawaSlabs_v3(Rad_T, 300.0, divProtCell, divNcell, divPcell, divSubCell, firstgap_d, Rad_d, gap_d, fsf_d, emitter_d, base_d, substrate_d, Rad_dop, fsf_dop, emitter_dop, base_dop, base_As, fsf_As, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
+        # Storage for photon number computations.
+        htPairs = Array{Float64,1}(undef, size(lPairs)[2])
+        # Compute number of generated photons using heat transfer function.
+        # Switch from flux values achieved through prefactors declared in uOttawaSlabStruct.jl.
+        stats2 = @timed heatTfr!(lVar, lPairs, enrRng, htPairs)
         # Open output file.
         fileStream = open("Photon Number/"*fName,"w")
         #end
         # Double check thread initialization.
         write(fileStream, "Julia initialized with "*string(nthreads())*" threads.\n\n")
-        ## External program settings, internal setting contained in uOttawaSlabStruct.jl
-        enrRng = (0.35, 1.0)
         ## Begin program execution.
         write(fileStream, "Execution:\n")
-        # Builds slab structure, generating lVar and lPairs.
-        # Arguments are: temperature of the emitter, background temperature, divisions of NCell
-        # (Resolution of photon generation is thckInAs / divNCell), division of PCell
-        stats = @timed (lVar, lPairs) = uOttawaSlabs_v3(Rad_T, 300.0, divProtCell, divNcell, divPcell, divSubCell, firstgap_d, Rad_d, gap_d, fsf_d, emitter_d, base_d, substrate_d, Rad_dop, fsf_dop, emitter_dop, base_dop, base_As, fsf_As, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
-        write(fileStream, "Layer structure constructed in " * string(stats.time) * " s.\n")
-        # Storage for photon number computations.
-        htPairs = Array{Float64,1}(undef, size(lPairs)[2])
-        # Compute number of generated photons using heat transfer function.
-        # Switch from flux values achieved through prefactors declared in uOttawaSlabStruct.jl.
-        stats = @timed heatTfr!(lVar, lPairs, enrRng, htPairs)
-        write(fileStream, "Generated excitation profile computed " * string(stats.time) * " s.\n")
+        write(fileStream, "Layer structure constructed in " * string(stats1.time) * " s.\n")
+        write(fileStream, "Generated excitation profile computed " * string(stats2.time) * " s.\n")
         write(fileStream,string(xMinN)*" "*string(xMinP)*" "*string(xMinSub)*" "*string(xMinProt)*" xMin for mbox meshing. InAs, Q, Substrate, Prot respectively. \n")
         write(fileStream,string(divNcell)*" "*string(divPcell)*" "*string(divSubCell)*" "*string(divProtCell)*" of slices for InAs, Q, and Substrate, Prot respectively.\n\n")
         # Write results to file.
