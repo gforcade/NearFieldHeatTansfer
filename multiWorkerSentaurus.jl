@@ -3,48 +3,26 @@
 
 @everywhere push!(LOAD_PATH,pwd())
 @everywhere begin
-        
     using Distributed
     using Base.Threads, ProgressMeter, Roots
     using FilmDataStructures, FilmUtilities, ResponseModels, OttawaSlabCell_v3_1, OttawaSlabCell_v2, OttawaSlabCell_v3, OttawaSlabCell_v2_1
     const evJ = 1.6021774232052327e-19
-end
-
-
-
-
-# (CHANGE) sweeping over 2 parameters. Change parameters in heatLayersFunc as needed
-@everywhere sweep1=LinRange(5.0,30.0,6) 
-@everywhere sweep2=[3.0, 6.0, 10.0, 30.0, 60.0, 100.0, 300.0, 600.0, 1000.0]*(10.0^24) 
-
-
-@everywhere function heatLayersFunc(var1::Float64,var2::Float64)
-    
-    #gets the mbox value for a given N=# fo  slices and r = xthck/xmin
-    function mboxish(x,N,r)
-        
-        tot = 0.0
-        for ind = 1 : N - 1
-            tot += x^ind
-        end
-        return tot - (r - 1)
-    end
 
 
     # T [K], d [um], dop [m-3]
     Rad_T=700.0
     firstgap_d=0.5
-    Rad_d=var1 #10.0
-    gap_d=0.1
+    Rad_d=10.0
+    gap_d=[0.1,0.05]
     fsf_d=0.1
     emitter_d=5.0
     base_d=2.0
     substrate_d=120.0
-    Rad_dop=var2 #1.0*(10.0^25)
-    fsf_dop=3.0*(10.0^24)
-    emitter_dop=3.0*(10.0^21)
-    base_dop=3.0*(10.0^24)  #highest is best (proven)
-    substrate_dop=3.0*(10.0^24)
+    Rad_dop=1.0*(10.0^19)
+    fsf_dop=3.0*(10.0^18)
+    emitter_dop=3.0*(10.0^15)
+    base_dop=3.0*(10.0^18)  #highest is best (proven)
+    substrate_dop=3.0*(10.0^18)
     fsf_As=1.0
     base_As=0.4  #smallest is best because of higher bandgap
 
@@ -56,10 +34,40 @@ end
     emitter_dop = emitter_dop*1e6
     base_dop = base_dop*1e6
     substrate_dop = substrate_dop*1e6
+end
+
+
+@everywhere function heatLayersFunc(vals::NTuple{15,Float64})
+    
+    #gets the mbox value for a given N=# fo  slices and r = xthck/xmin
+    function mboxish(x,N,r)
+        
+        tot = 0.0
+        for ind = 1 : N - 1
+            tot += x^ind
+        end
+        return tot - (r - 1)
+    end
+
+    Rad_T_1=vals[1]
+    firstgap_d_1=vals[2]
+    Rad_d_1=vals[3]
+    gap_d_1=vals[4]
+    fsf_d_1=vals[5]
+    emitter_d_1=vals[6]
+    base_d_1=vals[7]
+    substrate_d_1=vals[8]
+    Rad_dop_1=vals[9]
+    fsf_dop_1=vals[10]
+    emitter_dop_1=vals[11]
+    base_dop_1=vals[12]  #highest is best (proven)
+    substrate_dop_1=vals[13]
+    fsf_As_1=vals[14]
+    base_As_1=vals[15]  #smallest is best because of higher bandgap
 
     ####running simulations
     #file name
-    fName = "Rad"*string(trunc(Int,round(Rad_T)))*"fstGap"*string(trunc(Int,round(firstgap_d*1000)))*"Si"*string(trunc(Int,round(Rad_d*1000)))*"Dop"*string(round(Rad_dop/1000000,sigdigits=1))*"Gap"*string(trunc(Int,round(gap_d*1000)))*"fsf"*string(trunc(Int,round(fsf_d*1000)))*"As"*string(round(fsf_As,sigdigits=1))*"Dop"*string(round(fsf_dop/1000000,sigdigits=1))*"InAs"*string(trunc(Int,round(emitter_d*1000)))*"Dop"*string(round(emitter_dop/1000000,sigdigits=1))*"Q"*string(trunc(Int,round(base_d*1000)))*"As"*string(round(base_As,sigdigits=1))*"Dop"*string(round(base_dop/1000000,sigdigits=1))*"Sub"*string(trunc(Int,round(substrate_d*1000)))*"Dop"*string(round(substrate_dop/1000000,sigdigits=1))*".txt"
+    fName = "Rad"*string(trunc(Int,round(Rad_T_1)))*"fstGap"*string(trunc(Int,round(firstgap_d_1*1000)))*"Si"*string(trunc(Int,round(Rad_d_1*1000)))*"Dop"*string(round(Rad_dop_1/1000000,sigdigits=1))*"Gap"*string(trunc(Int,round(gap_d_1*1000)))*"fsf"*string(trunc(Int,round(fsf_d_1*1000)))*"As"*string(round(fsf_As_1,sigdigits=1))*"Dop"*string(round(fsf_dop_1/1000000,sigdigits=1))*"InAs"*string(trunc(Int,round(emitter_d_1*1000)))*"Dop"*string(round(emitter_dop_1/1000000,sigdigits=1))*"Q"*string(trunc(Int,round(base_d_1*1000)))*"As"*string(round(base_As_1,sigdigits=1))*"Dop"*string(round(base_dop_1/1000000,sigdigits=1))*"Sub"*string(trunc(Int,round(substrate_d_1*1000)))*"Dop"*string(round(substrate_dop_1/1000000,sigdigits=1))*".txt"
     #only simulate if file not present
     if !isfile("Total Heat Transfer/"*fName)
         ####simulations for energy transfer
@@ -78,7 +86,7 @@ end
         enrRng = (0.01, 1.0) #energy interval
         # Builds slab structure, generating lVar and lPairs.
         # Arguments are: temperature of the emitter, background temperature, divisions of NCell
-        stats1 = @timed (lVar, lPairs) = uOttawaSlabs_v3_1(Rad_T, 300.0, divProtCell, divNcell, divPcell, divSubCell, firstgap_d, Rad_d, gap_d, fsf_d, emitter_d, base_d, substrate_d, Rad_dop, fsf_dop, emitter_dop, base_dop, base_As, fsf_As, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
+        stats1 = @timed (lVar, lPairs) = uOttawaSlabs_v3_1(Rad_T_1, 300.0, divProtCell, divNcell, divPcell, divSubCell, firstgap_d_1, Rad_d_1, gap_d_1, fsf_d_1, emitter_d_1, base_d_1, substrate_d_1, Rad_dop_1, fsf_dop_1, emitter_dop_1, base_dop_1, base_As_1, fsf_As_1, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
         # Storage for photon number computations.
         htPairs = Array{Float64,1}(undef, size(lPairs)[2])
         # Compute number of generated photons using heat transfer function.
@@ -115,7 +123,7 @@ end
         xMinProt = 0.0
         xMinN = 0.0
         xMinP = 0.0
-        xMinSub = substrate_d
+        xMinSub = substrate_d_1
         divProtCell = 1
         divNcell = 1
         divPcell = 1
@@ -128,7 +136,7 @@ end
         enrRng = (0.35, 1.0)
         # Builds slab structure, generating lVar and lPairs.
         # Arguments are: temperature of the emitter, background temperature, divisions of NCell
-        stats = @timed (lVar, lPairs) = uOttawaSlabs_v3(Rad_T, 300.0, divProtCell, divNcell, divPcell, divSubCell, firstgap_d, Rad_d, gap_d, fsf_d, emitter_d, base_d, substrate_d, Rad_dop, fsf_dop, emitter_dop, base_dop, base_As, fsf_As, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
+        stats = @timed (lVar, lPairs) = uOttawaSlabs_v3(Rad_T_1, 300.0, divProtCell, divNcell, divPcell, divSubCell, firstgap_d_1, Rad_d_1, gap_d_1, fsf_d_1, emitter_d_1, base_d_1, substrate_d_1, Rad_dop_1, fsf_dop_1, emitter_dop_1, base_dop_1, base_As_1, fsf_As_1, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
         # Storage for photon number computations.
         htPairs = Array{Float64,1}(undef, size(lPairs)[2])
         # Compute number of generated photons using heat transfer function.
@@ -141,20 +149,20 @@ end
         xMinN = 0.0
         xMinP = 0.0
         xMinSub = 0.1
-        divProtCell = ceil(Int,sqrt(fsf_d*100))
-        divNcell = ceil(Int,sqrt(emitter_d*100))
-        divPcell = ceil(Int,sqrt(base_d*100))
+        divProtCell = ceil(Int,sqrt(fsf_d_1*100))
+        divNcell = ceil(Int,sqrt(emitter_d_1*100))
+        divPcell = ceil(Int,sqrt(base_d_1*100))
         divSubCell = 30
         mboxProt = 0.0
         mboxN = 0.0
         mboxP = 0.0
-        mboxSuber(x) = mboxish(x,divSubCell,substrate_d/xMinSub)
+        mboxSuber(x) = mboxish(x,divSubCell,substrate_d_1/xMinSub)
         mboxSub = find_zero(mboxSuber,2.0,Order5())
         ## External program settings, internal setting contained in uOttawaSlabStruct.jl
         enrRng = (0.35, 1.0)
         # Builds slab structure, generating lVar and lPairs.
         # Arguments are: temperature of the emitter, background temperature, divisions of NCell
-        stats1 = @timed (lVar, lPairs) = uOttawaSlabs_v3(Rad_T, 300.0, divProtCell, divNcell, divPcell, divSubCell, firstgap_d, Rad_d, gap_d, fsf_d, emitter_d, base_d, substrate_d, Rad_dop, fsf_dop, emitter_dop, base_dop, base_As, fsf_As, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
+        stats1 = @timed (lVar, lPairs) = uOttawaSlabs_v3(Rad_T_1, 300.0, divProtCell, divNcell, divPcell, divSubCell, firstgap_d_1, Rad_d_1, gap_d_1, fsf_d_1, emitter_d_1, base_d_1, substrate_d_1, Rad_dop_1, fsf_dop_1, emitter_dop_1, base_dop_1, base_As_1, fsf_As_1, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
         # Storage for photon number computations.
         htPairs = Array{Float64,1}(undef, size(lPairs)[2])
         # Compute number of generated photons using heat transfer function.
@@ -200,14 +208,16 @@ end
 
 # DO NOT NEED TO CHANGE
 
-#function to set up the 2 parameter problem as a matrixsw
+@everywhere values = collect(Iterators.product(Rad_T,firstgap_d,Rad_d,gap_d,fsf_d,emitter_d,base_d,substrate_d,Rad_dop,fsf_dop,emitter_dop,base_dop,substrate_dop,fsf_As,base_As))
+
+#=function to set up the 2 parameter problem as a matrixsw
 @everywhere function twoParams(i::Int)
     twosweep = ceil(Int,i/length(sweep1))
     heatLayersFunc(sweep1[i - length(sweep1)*(twosweep-1)],sweep2[twosweep])
-end
+end=#
 
 
 # perform simulations and keep track of how much there is left
-@showprogress pmap(i -> twoParams(i),1:length(sweep1)*length(sweep2))
+@showprogress pmap( i -> heatLayersFunc(i),values)
 
 
