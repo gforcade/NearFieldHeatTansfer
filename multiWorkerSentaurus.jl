@@ -86,7 +86,7 @@ end
         enrRng = (0.01, 1.0) #energy interval
         # Builds slab structure, generating lVar and lPairs.
         # Arguments are: temperature of the emitter, background temperature, divisions of NCell
-        stats1 = @timed (lVar, lPairs) = uOttawaSlabs_v3_1(Rad_T_1, 300.0, divProtCell, divNcell, divPcell, divSubCell, firstgap_d_1, Rad_d_1, gap_d_1, fsf_d_1, emitter_d_1, base_d_1, substrate_d_1, Rad_dop_1, fsf_dop_1, emitter_dop_1, base_dop_1, base_As_1, fsf_As_1, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
+        stats1 = @timed (lVar, lPairs) = uOttawaSlabs_v3_1(Rad_T_1, 300.0, divProtCell, divNcell, divPcell, divSubCell, firstgap_d_1, Rad_d_1, gap_d_1, fsf_d_1, emitter_d_1, base_d_1, substrate_d_1, Rad_dop_1, fsf_dop_1, emitter_dop_1, base_dop_1,substrate_dop_1, base_As_1, fsf_As_1, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
         # Storage for photon number computations.
         htPairs = Array{Float64,1}(undef, size(lPairs)[2])
         # Compute number of generated photons using heat transfer function.
@@ -136,7 +136,7 @@ end
         enrRng = (0.35, 1.0)
         # Builds slab structure, generating lVar and lPairs.
         # Arguments are: temperature of the emitter, background temperature, divisions of NCell
-        stats = @timed (lVar, lPairs) = uOttawaSlabs_v3(Rad_T_1, 300.0, divProtCell, divNcell, divPcell, divSubCell, firstgap_d_1, Rad_d_1, gap_d_1, fsf_d_1, emitter_d_1, base_d_1, substrate_d_1, Rad_dop_1, fsf_dop_1, emitter_dop_1, base_dop_1, base_As_1, fsf_As_1, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
+        stats = @timed (lVar, lPairs) = uOttawaSlabs_v3(Rad_T_1, 300.0, divProtCell, divNcell, divPcell, divSubCell, firstgap_d_1, Rad_d_1, gap_d_1, fsf_d_1, emitter_d_1, base_d_1, substrate_d_1, Rad_dop_1, fsf_dop_1, emitter_dop_1, base_dop_1, substrate_dop_1, base_As_1, fsf_As_1, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
         # Storage for photon number computations.
         htPairs = Array{Float64,1}(undef, size(lPairs)[2])
         # Compute number of generated photons using heat transfer function.
@@ -162,7 +162,7 @@ end
         enrRng = (0.35, 1.0)
         # Builds slab structure, generating lVar and lPairs.
         # Arguments are: temperature of the emitter, background temperature, divisions of NCell
-        stats1 = @timed (lVar, lPairs) = uOttawaSlabs_v3(Rad_T_1, 300.0, divProtCell, divNcell, divPcell, divSubCell, firstgap_d_1, Rad_d_1, gap_d_1, fsf_d_1, emitter_d_1, base_d_1, substrate_d_1, Rad_dop_1, fsf_dop_1, emitter_dop_1, base_dop_1, base_As_1, fsf_As_1, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
+        stats1 = @timed (lVar, lPairs) = uOttawaSlabs_v3(Rad_T_1, 300.0, divProtCell, divNcell, divPcell, divSubCell, firstgap_d_1, Rad_d_1, gap_d_1, fsf_d_1, emitter_d_1, base_d_1, substrate_d_1, Rad_dop_1, fsf_dop_1, emitter_dop_1, base_dop_1, substrate_dop_1, base_As_1, fsf_As_1, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
         # Storage for photon number computations.
         htPairs = Array{Float64,1}(undef, size(lPairs)[2])
         # Compute number of generated photons using heat transfer function.

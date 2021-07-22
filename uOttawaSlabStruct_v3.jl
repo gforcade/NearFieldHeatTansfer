@@ -11,7 +11,7 @@ const e = 1.602*^(10,-19)
 const eV = 1.60218*^(10,-19)
 const hbar = 1.05457*^(10,-34) #m2kg/s
 const hbEV = 6.5821*^(10,-16) #eV s
-function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCell::Int, divPCell::Int, divSubCell::Int, firstGap::Float64, thckRad::Float64, distGap::Float64, thckProt::Float64, thckInAs::Float64, thckInAsSbP::Float64, thckSub::Float64, Si_ndoping::Float64, prot_ndoping::Float64, ndoping_InAs::Float64, pdoping_InAs::Float64, quat_x::Float64, prot_quat_x::Float64, mboxProt::Float64, mboxN::Float64, mboxP::Float64, mboxSub::Float64,xMinProt::Float64, xMinN::Float64, xMinP::Float64, xMinSub::Float64)
+function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCell::Int, divPCell::Int, divSubCell::Int, firstGap::Float64, thckRad::Float64, distGap::Float64, thckProt::Float64, thckInAs::Float64, thckInAsSbP::Float64, thckSub::Float64, Si_ndoping::Float64, prot_ndoping::Float64, ndoping_InAs::Float64, pdoping_InAs::Float64, substrate_doping::Float64, quat_x::Float64, prot_quat_x::Float64, mboxProt::Float64, mboxN::Float64, mboxP::Float64, mboxSub::Float64,xMinProt::Float64, xMinN::Float64, xMinP::Float64, xMinSub::Float64)
 ### Settings
 	# Total number of layers.
 	numLayers = 5 + divProtCell + divNCell + divPCell + divSubCell
@@ -113,7 +113,7 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 
 	eps_gold_imag(enr) = imag(epsgold(enr))
 	# InAs p-type subtrate doping and temperature
-	pInAs_param = eps_InAs_struct(pdoping_InAs,300.0)
+	pInAs_param = eps_InAs_struct(substrate_doping,300.0)
 	eps_pInAs(enr) = eps_InAsptype(enr,pInAs_param)
 	abs_pInAs_IBimag(enr) = /(imag(epsIBEV(enr,pInAs_param.N0,pInAs_param.T,pInAs_param.E0_T_InAs_value_ptype,pInAs_param.eps_inf,pInAs_param.P,pInAs_param.mstar_ptype_hh,pInAs_param.mstar_ptype_lh,pInAs_param.F,1.0)), enr)
 	
@@ -174,4 +174,4 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 	# Build layer description for heat transfer code.
 	return (lyrDsc(bdrLoc, tmpLst, optRsp, trfFacs),lPairs)
 end
-precompile(uOttawaSlabs_v3, (Float64, Float64, Int, Int, Int, Int, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64))
+precompile(uOttawaSlabs_v3, (Float64, Float64, Int, Int, Int, Int,Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64))
