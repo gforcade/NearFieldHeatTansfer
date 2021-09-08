@@ -69,7 +69,7 @@ end
     #file name
     fName = "Rad"*string(trunc(Int,round(Rad_T_1)))*"fstGap"*string(trunc(Int,round(firstgap_d_1*1000)))*"Si"*string(trunc(Int,round(Rad_d_1*1000)))*"Dop"*string(round(Rad_dop_1/1000000,sigdigits=1))*"Gap"*string(trunc(Int,round(gap_d_1*1000)))*"fsf"*string(trunc(Int,round(fsf_d_1*1000)))*"As"*string(round(fsf_As_1,sigdigits=1))*"Dop"*string(round(fsf_dop_1/1000000,sigdigits=1))*"InAs"*string(trunc(Int,round(emitter_d_1*1000)))*"Dop"*string(round(emitter_dop_1/1000000,sigdigits=1))*"Q"*string(trunc(Int,round(base_d_1*1000)))*"As"*string(round(base_As_1,sigdigits=1))*"Dop"*string(round(base_dop_1/1000000,sigdigits=1))*"Sub"*string(trunc(Int,round(substrate_d_1*1000)))*"Dop"*string(round(substrate_dop_1/1000000,sigdigits=1))*".txt"
     #only simulate if file not present
-    if !isfile("Total Heat Transfer/"*fName)
+    if !isfile("Photon Number/"*fName)
         ####simulations for energy transfer
         xMinProt = 0.0
         xMinN = 0.0

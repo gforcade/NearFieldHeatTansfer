@@ -29,18 +29,19 @@ function heatLayersFunc(var1::Float64,var2::Float64)
     # T [K], d [um], dop [m-3]
     Radiator_T = var1 #700.0
     d_firstgap = 0.5
-    d_Rad = 10.0
+    d_Rad = 25.0
     d_gap = 0.1
-    d_prot= 0.1
-    d_InAs_total = 3.0
+    d_prot= 0.01
+    d_InAs_total = 5.0
     d_InAsSbP_base = 2.0
     d_InAs_sub = 120.0
-    Si_ndoping = 1.0*(10.0^25)
+    Si_ndoping = 5.0*(10.0^25)
     ndoping_InAs = 3.0*(10.0^21)
-    quat_x = 0.5  #smallest is best because of higher bandgap
-    prot_quat_x = var2 #1.0
-    prot_ndoping = 3.0*(10.0^24)
-    pdoping_InAs = 5.0*(10.0^23)  #highest is best (proven)
+    quat_x = 0.4  #smallest is best because of higher bandgap
+    prot_quat_x = 0.5 #1.0
+    prot_ndoping = 1.5*(10.0^22)
+    pdoping_InAs = 3.0*(10.0^24)  #highest is best (proven)
+    substrate_dop = 3.0*(10.0^24)
     xMinProt = 0.0
     xMinN = 0.0
     xMinP = 0.0
@@ -66,11 +67,13 @@ function heatLayersFunc(var1::Float64,var2::Float64)
     # Double check thread initialization.
     print("Julia initialized with "*string(nthreads())*" threads.\n\n")
     ##  energy interval
-    enrRng = (0.01, 1.0)
+    enrRng = 0.35:0.01:1.0 #(0.01, 1.0)
     ## Begin program execution.
     print("Execution:\n")
-    stats = @timed (lVar, lPairs) = uOttawaSlabs_v3_1(Radiator_T, 300.0, divProtCell, divNcell, divPcell, divSubCell, d_firstgap, d_Rad, d_gap, d_prot, d_InAs_total, d_InAsSbP_base, d_InAs_sub, Si_ndoping, prot_ndoping, ndoping_InAs, pdoping_InAs, quat_x, prot_quat_x, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
+    stats = @timed (lVar, lPairs) = uOttawaSlabs_v3_1(Radiator_T, 300.0, divProtCell, divNcell, divPcell, divSubCell, d_firstgap, d_Rad, d_gap, d_prot, d_InAs_total, d_InAsSbP_base, d_InAs_sub, Si_ndoping, prot_ndoping, ndoping_InAs, pdoping_InAs, substrate_dop, quat_x, prot_quat_x, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub)
     print("Layer structure constructed in " * string(stats.time) * " s.\n")
+    
+    #=
     # Storage for energy transfer computations.
     htPairs = Array{Float64,1}(undef, size(lPairs)[2])
     # Compute heat transfer, using heat transfer function.
@@ -86,10 +89,26 @@ function heatLayersFunc(var1::Float64,var2::Float64)
     for ind = 1 : length(htPairs) - 1
         print(string(round((lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,1]-1]),sigdigits=4))*" "*string(round(htPairs[ind]/((lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,ind]-1])),sigdigits=4)) * " \n")
     end
-    #gold backing absorption
+     #gold backing absorption
     print(string(round((lVar.bdrLoc[lPairs[2,length(htPairs)-1]] - lVar.bdrLoc[lPairs[2,1]-1]),sigdigits=4))*" "*string(round(htPairs[length(htPairs)],sigdigits=4)) * " \n")
     # Flush file stream.
     #close(fileStream)
+    =#
+
+    # Storage for relative density of states computations. 
+    relDOSPts = Array{Float64,2}(undef, size(lPairs)[2], length(enrRng))
+    # Compute spatially averaged relative density of states for all layers appearing as layer pair targets. 
+    stats = @timed relDOSIntEval!(lVar, lPairs, enrRng, relDOSPts)
+
+    for enrInd = 1 : length(enrRng)
+
+        print(string(round(enrRng[enrInd], sigdigits = 4)) * "		") 
+        for lyrInd = 1 : size(lPairs)[2]
+        
+            print(string(round(1.0 + relDOSPts[lyrInd,enrInd], sigdigits = 4))*"    " ) 
+        end
+        print("\n")
+    end
     #
 
 
