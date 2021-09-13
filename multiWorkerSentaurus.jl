@@ -17,7 +17,7 @@
     fsf_d=0.1
     emitter_d=5.0
     base_d=2.0
-    substrate_d=120.0
+    substrate_d=0.0#120.0
     Rad_dop=1.0*(10.0^19)
     fsf_dop=3.0*(10.0^18)
     emitter_dop=3.0*(10.0^15)
@@ -78,7 +78,11 @@ end
         divProtCell = 1
         divNcell = 1
         divPcell = 1 
-        divSubCell = 1 
+        if substrate_d_1 == 0.0
+            divSubCell = 0 
+        else 
+            divSubCell = 1 
+        end
         mboxProt = 0.0
         mboxN = 0.0
         mboxP = 0.0
@@ -127,7 +131,11 @@ end
         divProtCell = 1
         divNcell = 1
         divPcell = 1
-        divSubCell = 1
+        if substrate_d_1 == 0.0
+            divSubCell = 0 
+        else
+            divSubCell = 1 
+        end
         mboxProt = 0.0
         mboxN = 0.0
         mboxP = 0.0
@@ -152,12 +160,20 @@ end
         divProtCell = ceil(Int,sqrt(fsf_d_1*100))
         divNcell = ceil(Int,sqrt(emitter_d_1*100))
         divPcell = ceil(Int,sqrt(base_d_1*100))
-        divSubCell = 30
+        if substrate_d_1 == 0.0
+            divSubCell = 0 
+        else 
+            divSubCell = 30
+        end
         mboxProt = 0.0
         mboxN = 0.0
         mboxP = 0.0
-        mboxSuber(x) = mboxish(x,divSubCell,substrate_d_1/xMinSub)
-        mboxSub = find_zero(mboxSuber,2.0,Order5())
+        if substrate_d_1 == 0.0
+            mboxSub = 1.0 
+        else 
+            mboxSuber(x) = mboxish(x,divSubCell,substrate_d_1/xMinSub)
+            mboxSub = find_zero(mboxSuber,2.0,Order5())
+        end
         ## External program settings, internal setting contained in uOttawaSlabStruct.jl
         enrRng = (0.35, 1.0)
         # Builds slab structure, generating lVar and lPairs.
