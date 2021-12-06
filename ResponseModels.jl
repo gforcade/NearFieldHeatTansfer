@@ -124,7 +124,7 @@ precompile(eVtoOmega, (Float64,))
 @inline function eps_InAs_struct(N0,T)
 	E0_T_InAs_value = E0_T_InAs(N0,T)
 	E0_T_InAs_value_ptype = E0_T_InAs_ptype(N0,T)
-	mstar= m_star(N0)
+	mstar= 0.024*m_0  #m_star(N0)
 	mstar_ptype_lh = 0.026*m_0
 	mstar_ptype_hh = 0.36*m_0
 	mstar_ptype = m_star_ptype(mstar_ptype_hh,mstar_ptype_lh)

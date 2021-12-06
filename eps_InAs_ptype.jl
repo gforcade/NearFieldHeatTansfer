@@ -16,23 +16,6 @@ const m_e =9.109*^(10,-31)#kg
 const m_0 = 0.9109*^(10,-30)
 const m_0_eV = 0.51099906*^(10,6) #eV
 
-const E0_InAs = 0.42
-const dt0_InAs = 0.28*0.001
-const b0_InAs = 93
-const A_InAs = 8.34*10^(-9) #for p-type  InAs, From Levinshtein Handbook on semiconductor parameters.
-const B_InAs = 2.91*10^(-7)
-const C_InAs = 4.53*10^(-12) #N in m^(-3)
-
-const P_square = 11.9   #eV
-const E_g_InAs= 0.416 #eV 
-const m_h = 0.41      #effective mass of holes 
-
-const umin =20.0
-const umax = 530.0
-const Nref = 1.1*10^17*10^6 #in m^(-3) since N_base in m^(-3)
-const phi = 0.46
-const t1 = 2.3
-const t2 = 3.0
 
 
 @inline function m_star_ptype(m_hh,m_lh) # change m_e according to MB shift
@@ -42,6 +25,12 @@ end
 precompile(m_star_ptype, (Float64,Float64))
 
 @inline function Gamma_ptype(N_Base,T,m_star_ptype)
+    umin =20.0
+    umax = 530.0
+    Nref = 1.1*10^17*10^6 #in m^(-3) since N_base in m^(-3)
+    phi = 0.46
+    t1 = 2.3
+    t2 = 3.0
     mu_franc =  umin + (umax*(300.0/T)^t1-umin)/(1+(N_Base/(Nref*(T/300.0)^t2))^phi)#from Francoeur 
     return e/(m_star_ptype*mu_franc*10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
 end
@@ -49,7 +38,9 @@ precompile(Gamma_ptype, (Float64,Float64,Float64))
 
 @inline function E0_T_InAs_ptype(N0,T) 
     #delta_Eg_InAs = A_InAs*(N0/10^6)^(1/3) + B_InAs*(N0/10^6)^(1/4) + C_InAs*(N0/10^6)^(1/2)
-
+    E0_InAs = 0.417
+    dt0_InAs = 0.276*0.001
+    b0_InAs = 93
     #We don't include the effect of Moss Burstein shift for p-type since high VB density of states
     #dont include bandgap narrowing, since the states would not contribute to optical transistions
     E_T = E0_InAs - dt0_InAs*T^2/(T+b0_InAs)
@@ -57,11 +48,12 @@ precompile(Gamma_ptype, (Float64,Float64,Float64))
 end
 precompile(E0_T_InAs_ptype, (Float64,Float64))
 
-const eps_inf_InAs = 12.3
-const g = 2.89*10.0^11  #s^(-1), gamma
-const o_TO = 4.12*10.0^(13) #s^(-1)
-const o_LO = 4.58*10.0^(13)
+
 @inline function epsFCL_ptype(omega,mstar,gamma,N_base)
+    eps_inf_InAs = 12.3
+    g = 9.23*10.0^11  #s^(-1), gamma
+    o_TO = 4.14*10.0^(13) #s^(-1)
+    o_LO = 4.55*10.0^(13)
     o_p_square=N_base*e^2/(12.3*eps_0*mstar) #s^(-2)
     return eps_inf_InAs*(1.0+(o_LO^2-o_TO^2)/(o_TO^2-omega^2-im*omega*g)-o_p_square/(omega*(omega+ im*gamma)))
 end

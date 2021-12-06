@@ -157,8 +157,8 @@ function epsIB(omega,N0,T,E0_T_InAs_value,eps_inf,P,mhh,mlh,F,n_or_p)
     alpha = alpha_lb_2(omega,E0_T_InAs_value,eps_inf,P,mhh,mlh,T,F,n_or_p)
     m_IB_pp = alpha*c/(2*omega)
     #kk relations refractive index
-    #integratedfn3(x) = (alpha_lb_2(x,E0_T_InAs_value,eps_inf,P,mhh,T,F,n_or_p) - alpha)/((x^2 - omega^2))
-    #m_IB_p_value = eps_inf^(1/2)  + c/pi*quadgk(integratedfn3,1.0,1.0e10/hbar_eV,rtol=1e-6)[1] - 0.53 #-0.6 to make eps_inf at below bandgap frequencies (InAs ~0.06% error, InAs0.4SbP ~0.05% error)
+    #integratedfn3(x) = (alpha_lb_2(x,E0_T_InAs_value,eps_inf,P,mhh,mlh,T,F,n_or_p) - alpha)/((x^2 - omega^2))
+    #m_IB_p_value = eps_inf^(1.0/2.0) - 0.17 + c/pi*quadgk(integratedfn3,1.0,4.0/hbar_eV,rtol=1e-6)[1] # to make eps_inf at below bandgap frequencies (InAs ~0.06% error, InAs0.4SbP ~0.05% error)
     #constant refractive index 
     m_IB_p_value = eps_inf^(1/2)
     #dieletric form

@@ -203,8 +203,8 @@ precompile(m_star_ptype, (Float64,Float64))
 
     #interpolated values
     #m_star = x*me_InAs + (1-x)*me_InSbP
-    umin = (x/umin_InAs + (1-x)/umin_InSbP)
-    umax = (x/umax_InAs + (1-x)/umax_InSbP)
+    umin = 1/(x/umin_InAs + (1-x)/umin_InSbP)
+    umax = 1/(x/umax_InAs + (1-x)/umax_InSbP)
     Nref = x*Nref_InAs + (1-x)*Nref_InSbP
     phi = x*phi_InAs + (1-x)*phi_InSbP
     t1 = x*t1_InAs + (1-x)*t1_InSbP
@@ -218,13 +218,12 @@ precompile(Gamma_ntype_InAsSbP, (Float64,Float64,Float64,Float64,Float64))
 
 @inline function Gamma_ptype_InAsSbP(x,y,N_Base,T,m_star)
     
-    #InAs
-    #me_InAs = 0.41*m_0
-    umin_InAs = 1000.0
-    umax_InAs = 34000.0
-    Nref_InAs = 1.1*10^18*10^6 #in m^(-3) since N_base in m^(-3)
-    phi_InAs = 0.32
-    t1_InAs = 1.57
+    #InAs 
+    umin_InAs = 20.0
+    umax_InAs = 530.0
+    Nref_InAs = 1.1*10^17*10^6 #in m^(-3) since N_base in m^(-3)
+    phi_InAs = 0.46
+    t1_InAs = 2.3
     t2_InAs = 3.0
 
     #InSbP (same as Sentaurus)
@@ -238,8 +237,8 @@ precompile(Gamma_ntype_InAsSbP, (Float64,Float64,Float64,Float64,Float64))
 
     #interpolated values
     #m_star = x*me_InAs + (1-x)*me_InSbP
-    umin = (x/umin_InAs + (1-x)/umin_InSbP)
-    umax = (x/umax_InAs + (1-x)/umax_InSbP)
+    umin = 1/(x/umin_InAs + (1-x)/umin_InSbP)
+    umax = 1/(x/umax_InAs + (1-x)/umax_InSbP)
     Nref = x*Nref_InAs + (1-x)*Nref_InSbP
     phi = x*phi_InAs + (1-x)*phi_InSbP
     t1 = x*t1_InAs + (1-x)*t1_InSbP
@@ -301,7 +300,7 @@ end
     Eg= func_Q2(x,y,Eg_T_InAs,Eg_T_InSb,Eg_InP)
     alpha_lc = func_Q2(x,y,alpha_lc_InAs,alpha_lc_InSb,alpha_lc_InP)
     =#
-    E0 =  0.512 + 0.03*x - 0.183*x^2  #only good for InAsSbP lattice matched to InAs #func_Q2(x,y,E0_T_InAs,E0_T_InSb,E0_T_InP)    
+    E0 =  0.512 + 0.03*x - 0.188*x^2  #only good for InAsSbP lattice matched to InAs #func_Q2(x,y,E0_T_InAs,E0_T_InSb,E0_T_InP)    
     mstar_ntype = func_Q2(x,y,0.024,0.013,0.07927)*m_0 #effective masses from Adachi, "Properties of Semiconductor alloys: ...," 2009
     mstar_ptype_lh = func_Q2(x,y,0.026,0.014,0.11)*m_0
 	mstar_ptype_hh = func_Q2(x,y,0.36,0.38,0.69)*m_0
@@ -329,9 +328,9 @@ precompile(eVtoOmega, (Float64,))
 
     #adding IB or no IB. IB - epsinf since I don't want to double count
     #if(E_photon>InAsSbPstruct.E0_InAsSbP)
-    return epsIB(eVtoOmega(E_photon),InAsSbPstruct.N0,InAsSbPstruct.T,InAsSbPstruct.E0_InAsSbP,InAsSbPstruct.epsinf,InAsSbPstruct.P,InAsSbPstruct.mstar_ptype_hh,InAsSbPstruct.mstar_ptype_lh,InAsSbPstruct.F,0.0) - InAsSbPstruct.epsinf + epsFCL_InAsSbP(InAsSbPstruct.x,InAsSbPstruct.y,eVtoOmega(E_photon),InAsSbPstruct.mstar_ntype,InAsSbPstruct.gamma_ntype,InAsSbPstruct.N0,InAsSbPstruct.epsinf)
+    return epsIB(eVtoOmega(E_photon),InAsSbPstruct.N0,InAsSbPstruct.T,InAsSbPstruct.E0_InAsSbP,InAsSbPstruct.epsinf,InAsSbPstruct.P,InAsSbPstruct.mstar_ptype_hh,InAsSbPstruct.mstar_ptype_lh,InAsSbPstruct.F,0.0) - InAsSbPstruct.epsinf  + epsFCL_InAsSbP(InAsSbPstruct.x,InAsSbPstruct.y,eVtoOmega(E_photon),InAsSbPstruct.mstar_ntype,InAsSbPstruct.gamma_ntype,InAsSbPstruct.N0,InAsSbPstruct.epsinf)
     #else
-    #    return epsFCL_InAsSbP(InAsSbPstruct.x,InAsSbPstruct.y,eVtoOmega(E_photon),InAsSbPstruct.mstar_ntype,InAsSbPstruct.gamma_ntype,InAsSbPstruct.N0,InAsSbPstruct.epsinf)
+    #return epsIB(eVtoOmega(E_photon),InAsSbPstruct.N0,InAsSbPstruct.T,InAsSbPstruct.E0_InAsSbP,InAsSbPstruct.epsinf,InAsSbPstruct.P,InAsSbPstruct.mstar_ptype_hh,InAsSbPstruct.mstar_ptype_lh,InAsSbPstruct.F,0.0)
     #end
 end
 precompile(eps_InAsSbP_xy_ntype,(Float64,InAsSbPDsc))
