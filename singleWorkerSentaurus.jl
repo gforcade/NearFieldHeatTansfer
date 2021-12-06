@@ -6,26 +6,26 @@ savFileDir = "/home/gforc034/hs_Sean_02102021_v3"
 
 push!(LOAD_PATH,savFileDir)
 using Base.Threads, ProgressMeter, Roots, Base
-using FilmDataStructures, FilmUtilities, ResponseModels, OttawaSlabCell_v3_1, OttawaSlabCell_v2, OttawaSlabCell_v3, OttawaSlabCell_v2_1
+using FilmDataStructures, FilmUtilities, ResponseModels, OttawaSlabCell_v3_1, OttawaSlabCell_v3
 const evJ = 1.6021774232052327e-19
 
 
 # T [K], d [um], dop [m-3]
 Rad_T=700.0
 firstgap_d=0.5
-Rad_d=10.0
-gap_d=[0.1,0.05]
+Rad_d=30.0
+gap_d=0.1
 fsf_d=0.1
-emitter_d=5.0
+emitter_d=3.0
 base_d=2.0
-substrate_d=0.0#120.0
-Rad_dop=1.0*(10.0^19)
+substrate_d=120.0
+Rad_dop=5.0*(10.0^19)
 fsf_dop=3.0*(10.0^18)
 emitter_dop=3.0*(10.0^15)
-base_dop=3.0*(10.0^18)  #highest is best (proven)
-substrate_dop=3.0*(10.0^18)
+base_dop=5.0*(10.0^17)  #highest is best (proven)
+substrate_dop=5.0*(10.0^17)
 fsf_As=1.0
-base_As=0.4  #smallest is best because of higher bandgap
+base_As=0.5  #smallest is best because of higher bandgap
 
 
 #changing the parameters from sentaurus units to optical model units

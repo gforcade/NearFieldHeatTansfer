@@ -70,8 +70,8 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 
 	## Optical models and absorption functions.
 	# Silicon emitter
-	acpDpt = dptDsc(0.045, 0.0)
-	dnrDpt = dptDsc(0.0456, Si_ndoping/1.0e6)  #converting from m-3 to cm-3 for model convention
+	acpDpt = dptDsc(0.045, Si_ndoping/1.0e6)
+	dnrDpt = dptDsc(0.0456, 0.0)  #converting from m-3 to cm-3 for model convention
 
 	#calculates silicon model parameters for slab way above
 	siModParamsE_top = prmMSi(300.0, acpDpt, acpDpt)
