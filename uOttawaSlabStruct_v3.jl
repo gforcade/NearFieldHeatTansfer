@@ -72,9 +72,10 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 	# Silicon emitter
 	acpDpt = dptDsc(0.045, Si_ndoping/1.0e6)
 	dnrDpt = dptDsc(0.0456, 0.0)  #converting from m-3 to cm-3 for model convention
+	Dpt = dptDsc(0.0456, 1.0e13) #for no doping
 
 	#calculates silicon model parameters for slab way above
-	siModParamsE_top = prmMSi(300.0, acpDpt, acpDpt)
+	siModParamsE_top = prmMSi(300.0, Dpt, Dpt)
 	# Construct silicon response model.
 	siRspE_top(enr) = siRsp(enr, siModParamsE_top)
 	siAbsE_top(enr) = imag(siRspE(enr))

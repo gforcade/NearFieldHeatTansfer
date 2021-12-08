@@ -72,12 +72,13 @@ function uOttawaSlabs_v3_1(tEmit::Float64, tBck::Float64, divProtCell::Int, divN
 	# Silicon emitter
 	acpDpt = dptDsc(0.045, Si_ndoping/1.0e6)
 	dnrDpt = dptDsc(0.0456, 0.0)
+	Dpt = dptDsc(0.0456, 1.0e13) #for no doping
 
 	#calculates silicon model parameters for slab way above
-	siModParamsE_top = prmMSi(300.0, acpDpt, acpDpt)
+	siModParamsE_top = prmMSi(300.0, Dpt, Dpt)
 	# Construct silicon response model.
 	siRspE_top(enr) = siRsp(enr, siModParamsE_top)
-	siAbsE_top(enr) = imag(siRspE(enr))
+	siAbsE_top(enr) = imag(siRspE_top(enr))
 
 	# Calculate silicon model parameters, see siMod and ResponseModels.
 	siModParamsE = prmMSi(tEmit, dnrDpt, acpDpt)
@@ -127,7 +128,7 @@ function uOttawaSlabs_v3_1(tEmit::Float64, tBck::Float64, divProtCell::Int, divN
 	# Layers prior to N-type part of the cell.
 	#push!(optRsp, siRspE, gRsp,eps_InAsSbP) 
 	push!(optRsp, siRspE_top, gRsp, siRspE, gRsp) 
-	#Si, air and protective InAsSbP
+	#Si, air, Si, air 
 	#push!(trfFacs, siAbsE, gAbs,eps_InAsSbP_IBimag)
 	push!(trfFacs, siAbsE_top, gAbs, siAbsE, gAbs)
 	# Protection layer part of the PV cell
