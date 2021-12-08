@@ -4,7 +4,7 @@ push!(LOAD_PATH,pwd())
 
         
 using Base.Threads, ProgressMeter, LaTeXStrings, Roots,Dates
-using FilmDataStructures, FilmUtilities, ResponseModels, OttawaSlabCell_v3_1, OttawaSlabCell_v2, OttawaSlabCell_v3, OttawaSlabCell_v2_1
+using FilmDataStructures, FilmUtilities, ResponseModels, OttawaSlabCell_v3_1, OttawaSlabCell_v3
 const evJ = 1.6021774232052327e-19
 
 
@@ -29,21 +29,21 @@ function heatLayersFunc(var1::Float64,var2::Float64)
     # T [K], d [um], dop [m-3]
     Radiator_T = 700.0
     d_firstgap = 0.5
-    d_Rad = 25.0
+    d_Rad = 100.0
     d_gap = 0.1
-    d_prot= 0.01
-    d_InAs_total = 5.0
-    d_InAsSbP_base = 2.0
-    d_InAs_sub = 0.0
-    Si_ndoping = 5.0*(10.0^25)
+    d_prot= 0.02
+    d_InAs_total = 3.5
+    d_InAsSbP_base = 1.5
+    d_InAs_sub = 200.0
+    Si_ndoping = 5.0*(10.0^25) #25
     ndoping_InAs = 3.0*(10.0^21)
     quat_x = 0.4  #smallest is best because of higher bandgap
-    prot_quat_x = 1.0
+    prot_quat_x = 0.6
     prot_ndoping = 3.0*(10.0^21)
     pdoping_InAs = 3.0*(10.0^24)  #highest is best (proven)
     substrate_dop = 3.0*(10.0^24)
     #output folder
-    fName = "Results From Dyson_v5\\"
+    fName = "Results From Dyson_v8\\"
 
     
     ####
