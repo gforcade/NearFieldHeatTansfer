@@ -26,7 +26,7 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 	bdrLoc[3] = thckRad +firstGap 
 	bdrLoc[4] = distGap + thckRad + firstGap
 	#bdrLoc[5] = bdrLoc[4] + thckProt 
-	#fill oundaries with protection layer, using the graded layer thcikness scheme
+	#fill boundaries with protection layer, using the graded layer thcikness scheme
 	for ind = 1 : divProtCell
 		bdrLoc[4 + ind] = bdrLoc[3  + ind] + thckProt/divProtCell
 	end
@@ -70,8 +70,13 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 
 	## Optical models and absorption functions.
 	# Silicon emitter
-	acpDpt = dptDsc(0.045, Si_ndoping/1.0e6)
-	dnrDpt = dptDsc(0.0456, 0.0)  #converting from m-3 to cm-3 for model convention
+	if abs(Si_ndoping) == Si_ndoping
+		acpDpt = dptDsc(0.045, 0.0)
+		dnrDpt = dptDsc(0.0456, abs(Si_ndoping)/1.0e6)
+	else
+		acpDpt = dptDsc(0.045, abs(Si_ndoping)/1.0e6)
+		dnrDpt = dptDsc(0.0456, 0.0)
+	end		
 	Dpt = dptDsc(0.0456, 1.0e13) #for no doping
 
 	#calculates silicon model parameters for slab way above
@@ -91,33 +96,46 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 	gAbs(enr) = 0.0
 
 	#protection layer
-	# InAsSbP 
-	InAsSbPstructure_prot = InAsSbP_struct(prot_quat_x,0.311*(1 - prot_quat_x),prot_ndoping,300.0)
-	eps_InAsSbP_prot(enr) = eps_InAsSbP_xy_ntype(enr,InAsSbPstructure_prot)
-	abs_InAsSbP_IBimag_prot(enr) = /(eps_InAsSbP_imag_xy_ntype(enr,InAsSbPstructure_prot), enr)
-	# InAs
-	InAs_param_prot =eps_InAs_struct(prot_ndoping,300.0)
-	eps_InAs_prot(enr) = eps_InAsntype(enr,InAs_param)
-	abs_InAs_IBimag_prot(enr) = /(imag(epsIBEV(enr,InAs_param_prot.N0,InAs_param_prot.T,InAs_param_prot.E0_T_InAs_value,InAs_param_prot.eps_inf,InAs_param_prot.P,InAs_param_prot.mstar_ptype_hh,InAs_param_prot.mstar_ptype_lh,InAs_param_prot.F,0.0)), enr)
-
+	InAsSbPstructure_prot = InAsSbP_struct(prot_quat_x,0.311*(1 - prot_quat_x),abs(prot_ndoping),300.0)
+	#n-type
+	eps_prot_n(enr) = eps_InAsSbP_xy_ntype(enr,InAsSbPstructure_prot)
+	abs_prot_n_IBimag(enr) = /(eps_InAsSbP_imag_xy_ntype(enr,InAsSbPstructure_prot), enr)
+	#p-type
+	eps_prot_p(enr) = eps_InAsSbP_xy_ptype(enr,InAsSbPstructure_prot)
+	abs_prot_p_IBimag(enr) = /(eps_InAsSbP_imag_xy_ptype(enr,InAsSbPstructure_prot), enr)
 	
-	# InAs N-type (PV Cell) doping concentration and temperature
-	InAs_param =eps_InAs_struct(ndoping_InAs,300.0)
-	eps_nInAs(enr) = eps_InAsntype(enr,InAs_param)
-	abs_nInAs_IBimag(enr) = /(imag(epsIBEV(enr,InAs_param.N0,InAs_param.T,InAs_param.E0_T_InAs_value,InAs_param.eps_inf,InAs_param.P,InAs_param.mstar_ptype_hh,InAs_param.mstar_ptype_lh,InAs_param.F,0.0)), enr)
 	
-	# InAsSbP
-	InAsSbPstructure = InAsSbP_struct(quat_x,0.311*(1 - quat_x),pdoping_InAs,300.0)
-	eps_InAsSbP(enr) = eps_InAsSbP_xy_ptype(enr,InAsSbPstructure)
-	abs_InAsSbP_IBimag(enr) = /(eps_InAsSbP_imag_xy_ptype(enr,InAsSbPstructure), enr)
+	
+	# emitter layer
+	InAs_param =eps_InAs_struct(abs(ndoping_InAs),300.0)
+	eps_emitter_n(enr) = eps_InAsntype(enr,InAs_param)
+	abs_emitter_n_IBimag(enr) = /(imag(epsIBEV(enr,InAs_param.N0,InAs_param.T,InAs_param.E0_T_InAs_value,InAs_param.eps_inf,InAs_param.P,InAs_param.mstar_ptype_hh,InAs_param.mstar_ptype_lh,InAs_param.F,0.0)), enr)
+	#p-type
+	eps_emitter_p(enr) = eps_InAsptype(enr,InAs_param)
+	abs_emitter_p_IBimag(enr) = /(imag(epsIBEV(enr,InAs_param.N0,InAs_param.T,InAs_param.E0_T_InAs_value,InAs_param.eps_inf,InAs_param.P,InAs_param.mstar_ptype_hh,InAs_param.mstar_ptype_lh,InAs_param.F,1.0)), enr)
+	
 
+	# base layer
+	InAsSbPstructure = InAsSbP_struct(quat_x,0.311*(1 - quat_x),abs(pdoping_InAs),300.0)
+	#n-type
+	eps_base_n(enr) = eps_InAsSbP_xy_ntype(enr,InAsSbPstructure)
+	abs_base_n_IBimag(enr) = /(eps_InAsSbP_imag_xy_ntype(enr,InAsSbPstructure), enr)
+	#p-type
+	eps_base_p(enr) = eps_InAsSbP_xy_ptype(enr,InAsSbPstructure)
+	abs_base_p_IBimag(enr) = /(eps_InAsSbP_imag_xy_ptype(enr,InAsSbPstructure), enr)
+	
 
 	eps_gold_imag(enr) = imag(epsgold(enr))
 	# InAs p-type subtrate doping and temperature
-	pInAs_param = eps_InAs_struct(substrate_doping,300.0)
-	eps_pInAs(enr) = eps_InAsptype(enr,pInAs_param)
-	abs_pInAs_IBimag(enr) = /(imag(epsIBEV(enr,pInAs_param.N0,pInAs_param.T,pInAs_param.E0_T_InAs_value_ptype,pInAs_param.eps_inf,pInAs_param.P,pInAs_param.mstar_ptype_hh,pInAs_param.mstar_ptype_lh,pInAs_param.F,1.0)), enr)
+	pInAs_param = eps_InAs_struct(abs(substrate_doping),300.0)
+	#n-type
+	eps_sub_n(enr) = eps_InAsntype(enr,pInAs_param)
+	abs_sub_n_IBimag(enr) = /(imag(epsIBEV(enr,pInAs_param.N0,pInAs_param.T,pInAs_param.E0_T_InAs_value_ptype,pInAs_param.eps_inf,pInAs_param.P,pInAs_param.mstar_ptype_hh,pInAs_param.mstar_ptype_lh,pInAs_param.F,0.0)), enr)
+	#p-type
+	eps_sub_p(enr) = eps_InAsptype(enr,pInAs_param)
+	abs_sub_p_IBimag(enr) = /(imag(epsIBEV(enr,pInAs_param.N0,pInAs_param.T,pInAs_param.E0_T_InAs_value_ptype,pInAs_param.eps_inf,pInAs_param.P,pInAs_param.mstar_ptype_hh,pInAs_param.mstar_ptype_lh,pInAs_param.F,1.0)), enr)
 	
+
 	## Generate lists of optical responses and transfer factors.
 	optRsp = []
 	trfFacs = []  #absorption
@@ -129,36 +147,49 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 	#push!(trfFacs, siAbsE, gAbs,eps_InAsSbP_IBimag)
 	push!(trfFacs, siAbsE_top, gRsp, siAbsE, gAbs)
 	# Protection layer part of the PV cell
-	if prot_quat_x != 1.0
-		for ind = 1 : divProtCell
+	for ind = 1 : divProtCell
 
-			push!(optRsp,eps_InAsSbP_prot)
-			push!(trfFacs,abs_InAsSbP_IBimag_prot)
-		end
-	else
-		for ind = 1 : divProtCell
-
-			push!(optRsp,eps_InAs_prot)
-			push!(trfFacs,abs_InAs_IBimag_prot)
+		if abs(prot_ndoping) == prot_ndoping 
+			push!(optRsp,eps_prot_n)
+			push!(trfFacs,abs_prot_n_IBimag)
+		else
+			push!(optRsp,eps_prot_p)
+			push!(trfFacs,abs_prot_p_IBimag)
 		end
 	end
+
 	# N-type part of the PV cell. n-InAs
 	for ind = 1 : divNCell
 
-		push!(optRsp, eps_nInAs)
-		push!(trfFacs, abs_nInAs_IBimag)
+		if abs(ndoping_InAs) == ndoping_InAs
+			push!(optRsp, eps_emitter_n)
+			push!(trfFacs, abs_emitter_n_IBimag)
+		else
+			push!(optRsp, eps_emitter_p)
+			push!(trfFacs, abs_emitter_p_IBimag)
+		end
 	end
 	# P-type part of the PV cell. InAsSbP
 	for ind = 1 : divPCell
-
-		push!(optRsp, eps_InAsSbP)
-		push!(trfFacs, abs_InAsSbP_IBimag)
+		
+		if abs(pdoping_InAs) == pdoping_InAs
+			push!(optRsp, eps_base_n)
+			push!(trfFacs, abs_base_n_IBimag)
+		else
+			push!(optRsp, eps_base_p)
+			push!(trfFacs, abs_base_p_IBimag)
+		end
 	end
 	#P-type substrate of PV cell. InAs
 	for ind = 1 : divSubCell
 
-		push!(optRsp,eps_pInAs)
-		push!(trfFacs, abs_pInAs_IBimag)
+		if abs(substrate_doping) == substrate_doping
+			push!(optRsp,eps_sub_n)
+			push!(trfFacs, abs_sub_n_IBimag)
+		else
+			push!(optRsp,eps_sub_p)
+			push!(trfFacs, abs_sub_p_IBimag)
+		end
 	end
 	# Optically thick backing, gold/p-InAs
 	push!(optRsp, epsgold)
