@@ -83,7 +83,7 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 	siModParamsE_top = prmMSi(300.0, Dpt, Dpt)
 	# Construct silicon response model.
 	siRspE_top(enr) = siRsp(enr, siModParamsE_top)
-	siAbsE_top(enr) = imag(siRspE(enr))
+	siAbsE_top(enr) = imag(siRspE_top(enr))
 
 	# Calculate silicon model parameters, see siMod and ResponseModels.
 	siModParamsE = prmMSi(tEmit, dnrDpt, acpDpt)
