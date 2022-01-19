@@ -14,21 +14,30 @@ const hbEV = 6.5821*^(10,-16) #eV s
 function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCell::Int, divPCell::Int, divSubCell::Int, firstGap::Float64, thckRad::Float64, distGap::Float64, thckProt::Float64, thckInAs::Float64, thckInAsSbP::Float64, thckSub::Float64, Si_ndoping::Float64, prot_ndoping::Float64, ndoping_InAs::Float64, pdoping_InAs::Float64, substrate_doping::Float64, quat_x::Float64, prot_quat_x::Float64, mboxProt::Float64, mboxN::Float64, mboxP::Float64, mboxSub::Float64,xMinProt::Float64, xMinN::Float64, xMinP::Float64, xMinSub::Float64)
 ### Settings
 	# Total number of layers.
-	numLayers = 5 + divProtCell + divNCell + divPCell + divSubCell
+	if firstGap == 0.0
+		numExtraLayers = 3
+	else
+		numExtraLayers = 5
+	end
+	numLayers = divProtCell + divNCell + divPCell + divSubCell + numExtraLayers
 	## Temperature list of the layers.
 	tmpLst = fill(tBck, numLayers)
 	# Set temperature of the emitter.
-	tmpLst[3] = tEmit
+	tmpLst[numExtraLayers-2] = tEmit
 	## Boundary locations.
 	bdrLoc = Vector{Float64}(undef, numLayers - 1) 
 	bdrLoc[1] = 0.0
-	bdrLoc[2] = firstGap
-	bdrLoc[3] = thckRad +firstGap 
-	bdrLoc[4] = distGap + thckRad + firstGap
+	if firstGap == 0.0
+		bdrLoc[2] = distGap
+	else
+		bdrLoc[2] = firstGap
+		bdrLoc[3] = thckRad +firstGap 
+		bdrLoc[4] = distGap + thckRad + firstGap
+	end
 	#bdrLoc[5] = bdrLoc[4] + thckProt 
 	#fill boundaries with protection layer, using the graded layer thcikness scheme
 	for ind = 1 : divProtCell
-		bdrLoc[4 + ind] = bdrLoc[3  + ind] + thckProt/divProtCell
+		bdrLoc[numExtraLayers - 1 + ind] = bdrLoc[numExtraLayers - 2  + ind] + thckProt/divProtCell
 	end
 	#=
 	for ind = 0 : divProtCell -1
@@ -43,7 +52,7 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 	=#
 	for ind = 1 : divNCell
 
-		bdrLoc[4 + divProtCell + ind] = bdrLoc[3 + divProtCell + ind] + thckInAs/divNCell
+		bdrLoc[numExtraLayers - 1 + divProtCell + ind] = bdrLoc[numExtraLayers - 2 + divProtCell + ind] + thckInAs/divNCell
 	end
 	#=
 	# Fill boundaries for P-type part of the cell
@@ -53,12 +62,12 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 	=#
 	for ind = 1 : divPCell
 
-		bdrLoc[4 + divNCell + divProtCell + ind] = bdrLoc[3 + divNCell + divProtCell + ind] + thckInAsSbP/divPCell
+		bdrLoc[numExtraLayers - 1 + divNCell + divProtCell + ind] = bdrLoc[numExtraLayers - 2 + divNCell + divProtCell + ind] + thckInAsSbP/divPCell
 	end
 	#
 	# Fill boundaries for substrate
 	for ind = 0 : divSubCell - 1
-		bdrLoc[4 + divProtCell + divNCell + divPCell + ind + 1] = bdrLoc[4 + divProtCell + divNCell + divPCell + ind] + xMinSub*(mboxSub^ind)
+		bdrLoc[numExtraLayers + divNCell + divPCell + divProtCell + ind] = bdrLoc[numExtraLayers - 1 + divNCell + divPCell + divProtCell + ind] + xMinSub*(mboxSub^ind)
 	end
 	#=
 	for ind = 1 : divSubCell
@@ -141,11 +150,13 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 	trfFacs = []  #absorption
 
 	# Layers prior to N-type part of the cell.
-	#push!(optRsp, siRspE, gRsp,eps_InAsSbP) 
-	push!(optRsp, siRspE_top, gRsp, siRspE, gRsp) 
-	#Si, air and protective InAsSbP
-	#push!(trfFacs, siAbsE, gAbs,eps_InAsSbP_IBimag)
-	push!(trfFacs, siAbsE_top, gRsp, siAbsE, gAbs)
+	if firstGap == 0.0
+		push!(optRsp, siRspE, gRsp) 
+		push!(trfFacs, siAbsE, gAbs)
+	else
+		push!(optRsp, siRspE_top, gRsp, siRspE, gRsp) 
+		push!(trfFacs, siAbsE_top, gRsp, siAbsE, gAbs)
+	end
 	# Protection layer part of the PV cell
 	for ind = 1 : divProtCell
 
@@ -199,8 +210,8 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 	#  layer pairs.
 	for ind = 1 : divNCell + divPCell + divSubCell + divProtCell
 
-		lPairs[1, ind] = 3
-		lPairs[2, ind] = 4 + ind
+		lPairs[1, ind] = numExtraLayers - 2
+		lPairs[2, ind] = numExtraLayers - 1 + ind
 	end
 
 	# Build layer description for heat transfer code.

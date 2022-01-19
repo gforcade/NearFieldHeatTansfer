@@ -15,21 +15,29 @@ function uOttawaSlabs_v3_1(tEmit::Float64, tBck::Float64, divProtCell::Int, divN
 	
 	### Settings
 	# Total number of layers.
-	numLayers = 5 + divProtCell + divNCell + divPCell + divSubCell
+	if firstGap == 0.0
+		numExtraLayers = 3
+	else
+		numExtraLayers = 5
+	end
+	numLayers = divProtCell + divNCell + divPCell + divSubCell + numExtraLayers
 	## Temperature list of the layers.
 	tmpLst = fill(tBck, numLayers)
 	# Set temperature of the emitter.
-	tmpLst[3] = tEmit
+	tmpLst[numExtraLayers-2] = tEmit
 	## Boundary locations.
 	bdrLoc = Vector{Float64}(undef, numLayers - 1) 
 	bdrLoc[1] = 0.0
-	bdrLoc[2] = firstGap
-	bdrLoc[3] = thckRad +firstGap 
-	bdrLoc[4] = distGap + thckRad + firstGap
-	#bdrLoc[5] = bdrLoc[4] + thckProt 
+	if firstGap == 0.0
+		bdrLoc[2] = distGap
+	else
+		bdrLoc[2] = firstGap
+		bdrLoc[3] = thckRad +firstGap 
+		bdrLoc[4] = distGap + thckRad + firstGap
+	end
 	#fill oundaries with protection layer, using the graded layer thcikness scheme
 	for ind = 1 : divProtCell
-		bdrLoc[4 + ind] = bdrLoc[3  + ind] + thckProt/divProtCell
+		bdrLoc[numExtraLayers - 1 + ind] = bdrLoc[numExtraLayers - 2  + ind] + thckProt/divProtCell
 	end
 	#=
 	for ind = 0 : divProtCell -1
@@ -44,7 +52,7 @@ function uOttawaSlabs_v3_1(tEmit::Float64, tBck::Float64, divProtCell::Int, divN
 	=#
 	for ind = 1 : divNCell
 
-		bdrLoc[4 + divProtCell + ind] = bdrLoc[3 + divProtCell + ind] + thckInAs/divNCell
+		bdrLoc[numExtraLayers - 1 + divProtCell + ind] = bdrLoc[numExtraLayers - 2 + divProtCell + ind] + thckInAs/divNCell
 	end
 	#=
 	# Fill boundaries for P-type part of the cell
@@ -54,7 +62,7 @@ function uOttawaSlabs_v3_1(tEmit::Float64, tBck::Float64, divProtCell::Int, divN
 	=#
 	for ind = 1 : divPCell
 
-		bdrLoc[4 + divNCell + divProtCell + ind] = bdrLoc[3 + divNCell + divProtCell + ind] + thckInAsSbP/divPCell
+		bdrLoc[numExtraLayers - 1 + divNCell + divProtCell + ind] = bdrLoc[numExtraLayers - 2 + divNCell + divProtCell + ind] + thckInAsSbP/divPCell
 	end
 	
 	#=
@@ -65,7 +73,7 @@ function uOttawaSlabs_v3_1(tEmit::Float64, tBck::Float64, divProtCell::Int, divN
 	=#
 	for ind = 1 : divSubCell
 
-		bdrLoc[4 + divNCell + divPCell + divProtCell + ind] = bdrLoc[3 + divNCell + divPCell + divProtCell + ind] + thckSub/divSubCell
+		bdrLoc[numExtraLayers - 1 + divNCell + divPCell + divProtCell + ind] = bdrLoc[numExtraLayers - 2 + divNCell + divPCell + divProtCell + ind] + thckSub/divSubCell
 	end
 	#
 	
@@ -148,11 +156,13 @@ function uOttawaSlabs_v3_1(tEmit::Float64, tBck::Float64, divProtCell::Int, divN
 	trfFacs = []  #absorption
 
 	# Layers prior to N-type part of the cell.
-	#push!(optRsp, siRspE, gRsp,eps_InAsSbP) 
-	push!(optRsp, siRspE_top, gRsp, siRspE, gRsp) 
-	#Si, air, Si, air 
-	#push!(trfFacs, siAbsE, gAbs,eps_InAsSbP_IBimag)
-	push!(trfFacs, siAbsE_top, gAbs, siAbsE, gAbs)
+	if firstGap == 0.0	#Si, air 
+		push!(optRsp, siRspE, gRsp) 
+		push!(trfFacs, siAbsE, gAbs)
+	else	#Si, air, Si, air 
+		push!(optRsp, siRspE_top, gRsp, siRspE, gRsp) 
+		push!(trfFacs, siAbsE_top, gAbs, siAbsE, gAbs)
+	end
 	# Protection layer part of the PV cell
 	for ind = 1 : divProtCell
 
@@ -202,11 +212,11 @@ function uOttawaSlabs_v3_1(tEmit::Float64, tBck::Float64, divProtCell::Int, divN
 	push!(optRsp, epsgold)
 	push!(trfFacs,eps_gold_imag)
 	## Set which layers transmission should be calculated for.
-	lPairs = Array{Int64,2}(undef, 2, divProtCell + divNCell + divPCell + divSubCell +1) #+1 for gold back-reflector
+	lPairs = Array{Int64,2}(undef, 2, divProtCell + divNCell + divPCell + divSubCell +1) #+1 for semi-infinite back layer
 	for ind = 1 : divNCell + divPCell + divSubCell + divProtCell +1
 
-		lPairs[1, ind] = 3
-		lPairs[2, ind] = 4 + ind
+		lPairs[1, ind] = numExtraLayers - 2
+		lPairs[2, ind] = numExtraLayers - 1 + ind
 	end
 
 	# Build layer description for heat transfer code.
