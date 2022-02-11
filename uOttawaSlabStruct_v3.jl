@@ -3,7 +3,7 @@
 # InAsSbP (P cell), InAs, gold.
 # All temperatures are in Kelvin, and all lengths are in microns.
 # Absorption functions are current setup to calculate the number of photons absorbed as interband transitions.
-# - v3: doping for FSF layer, counts above interband photon absorption numbers 
+# - v3: counts above interband photon absorption numbers and heat transfer, #Input: Heat_or_Photon , 0 == Heat , 1 == Photon
 ####
 
 
@@ -11,7 +11,7 @@ const e = 1.602*^(10,-19)
 const eV = 1.60218*^(10,-19)
 const hbar = 1.05457*^(10,-34) #m2kg/s
 const hbEV = 6.5821*^(10,-16) #eV s
-function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCell::Int, divPCell::Int, divSubCell::Int, firstGap::Float64, thckRad::Float64, distGap::Float64, thckProt::Float64, thckInAs::Float64, thckInAsSbP::Float64, thckSub::Float64, Si_ndoping::Float64, prot_ndoping::Float64, ndoping_InAs::Float64, pdoping_InAs::Float64, substrate_doping::Float64, quat_x::Float64, prot_quat_x::Float64, mboxProt::Float64, mboxN::Float64, mboxP::Float64, mboxSub::Float64,xMinProt::Float64, xMinN::Float64, xMinP::Float64, xMinSub::Float64)
+function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCell::Int, divPCell::Int, divSubCell::Int, firstGap::Float64, thckRad::Float64, distGap::Float64, thckProt::Float64, thckInAs::Float64, thckInAsSbP::Float64, thckSub::Float64, Si_ndoping::Float64, prot_ndoping::Float64, ndoping_InAs::Float64, pdoping_InAs::Float64, substrate_doping::Float64, quat_x::Float64, prot_quat_x::Float64, mboxProt::Float64, mboxN::Float64, mboxP::Float64, mboxSub::Float64,xMinProt::Float64, xMinN::Float64, xMinP::Float64, xMinSub::Float64, Heat_or_Photon::Int)
 ### Settings
 	# Total number of layers.
 	if firstGap == 0.0
@@ -109,9 +109,11 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 	#n-type
 	eps_prot_n(enr) = eps_InAsSbP_xy_ntype(enr,InAsSbPstructure_prot)
 	abs_prot_n_IBimag(enr) = /(eps_InAsSbP_imag_xy_ntype(enr,InAsSbPstructure_prot), enr)
+	eps_prot_n_imag(enr) = imag(eps_InAsSbP_xy_ntype(enr,InAsSbPstructure_prot))
 	#p-type
 	eps_prot_p(enr) = eps_InAsSbP_xy_ptype(enr,InAsSbPstructure_prot)
 	abs_prot_p_IBimag(enr) = /(eps_InAsSbP_imag_xy_ptype(enr,InAsSbPstructure_prot), enr)
+	eps_prot_p_imag(enr) = imag(eps_InAsSbP_xy_ptype(enr,InAsSbPstructure_prot))
 	
 	
 	
@@ -119,37 +121,43 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 	InAs_param =eps_InAs_struct(abs(ndoping_InAs),300.0)
 	eps_emitter_n(enr) = eps_InAsntype(enr,InAs_param)
 	abs_emitter_n_IBimag(enr) = /(imag(epsIBEV(enr,InAs_param.N0,InAs_param.T,InAs_param.E0_T_InAs_value,InAs_param.eps_inf,InAs_param.P,InAs_param.mstar_ptype_hh,InAs_param.mstar_ptype_lh,InAs_param.F,0.0)), enr)
+	eps_emitter_n_imag(enr) = imag(eps_InAsntype(enr,InAs_param))
 	#p-type
 	eps_emitter_p(enr) = eps_InAsptype(enr,InAs_param)
 	abs_emitter_p_IBimag(enr) = /(imag(epsIBEV(enr,InAs_param.N0,InAs_param.T,InAs_param.E0_T_InAs_value,InAs_param.eps_inf,InAs_param.P,InAs_param.mstar_ptype_hh,InAs_param.mstar_ptype_lh,InAs_param.F,1.0)), enr)
-	
+	eps_emitter_p_imag(enr) = imag(eps_InAsptype(enr,InAs_param))
+
 
 	# base layer
 	InAsSbPstructure = InAsSbP_struct(quat_x,0.311*(1 - quat_x),abs(pdoping_InAs),300.0)
 	#n-type
 	eps_base_n(enr) = eps_InAsSbP_xy_ntype(enr,InAsSbPstructure)
 	abs_base_n_IBimag(enr) = /(eps_InAsSbP_imag_xy_ntype(enr,InAsSbPstructure), enr)
+	eps_base_n_imag(enr) = imag(eps_InAsSbP_xy_ntype(enr,InAsSbPstructure))
 	#p-type
 	eps_base_p(enr) = eps_InAsSbP_xy_ptype(enr,InAsSbPstructure)
 	abs_base_p_IBimag(enr) = /(eps_InAsSbP_imag_xy_ptype(enr,InAsSbPstructure), enr)
+	eps_base_p_imag(enr) = imag(eps_InAsSbP_xy_ptype(enr,InAsSbPstructure))
 	
 
 	eps_gold_imag(enr) = imag(epsgold(enr))
-	# InAs p-type subtrate doping and temperature
+	# InAs subtrate doping and temperature
 	pInAs_param = eps_InAs_struct(abs(substrate_doping),300.0)
 	#n-type
 	eps_sub_n(enr) = eps_InAsntype(enr,pInAs_param)
 	abs_sub_n_IBimag(enr) = /(imag(epsIBEV(enr,pInAs_param.N0,pInAs_param.T,pInAs_param.E0_T_InAs_value_ptype,pInAs_param.eps_inf,pInAs_param.P,pInAs_param.mstar_ptype_hh,pInAs_param.mstar_ptype_lh,pInAs_param.F,0.0)), enr)
+	eps_sub_n_imag(enr) = imag(eps_InAsntype(enr,pInAs_param))
 	#p-type
 	eps_sub_p(enr) = eps_InAsptype(enr,pInAs_param)
 	abs_sub_p_IBimag(enr) = /(imag(epsIBEV(enr,pInAs_param.N0,pInAs_param.T,pInAs_param.E0_T_InAs_value_ptype,pInAs_param.eps_inf,pInAs_param.P,pInAs_param.mstar_ptype_hh,pInAs_param.mstar_ptype_lh,pInAs_param.F,1.0)), enr)
-	
+	eps_sub_p_imag(enr) = imag(eps_InAsptype(enr,pInAs_param))
+
 
 	## Generate lists of optical responses and transfer factors.
 	optRsp = []
 	trfFacs = []  #absorption
 
-	# Layers prior to N-type part of the cell.
+	# Layers prior to the cell.
 	if firstGap == 0.0
 		push!(optRsp, siRspE, gRsp) 
 		push!(trfFacs, siAbsE, gAbs)
@@ -157,58 +165,108 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 		push!(optRsp, siRspE_top, gRsp, siRspE, gRsp) 
 		push!(trfFacs, siAbsE_top, gRsp, siAbsE, gAbs)
 	end
-	# Protection layer part of the PV cell
+	# FSF layer of the PV cell. InAsSbP
 	for ind = 1 : divProtCell
 
 		if abs(prot_ndoping) == prot_ndoping 
 			push!(optRsp,eps_prot_n)
-			push!(trfFacs,abs_prot_n_IBimag)
+			if Heat_or_Photon == 0
+				#checks heat transfer or photon count calculation  
+				push!(trfFacs,eps_prot_n_imag)
+			else
+				push!(trfFacs,abs_prot_n_IBimag)
+			end
 		else
 			push!(optRsp,eps_prot_p)
-			push!(trfFacs,abs_prot_p_IBimag)
+			if Heat_or_Photon == 0
+				#checks heat transfer or photon count calculation  
+				push!(trfFacs,eps_prot_p_imag)
+			else
+				push!(trfFacs,abs_prot_p_IBimag)
+			end
 		end
 	end
 
-	# N-type part of the PV cell. n-InAs
+	# Emitter layer of the PV cell. InAs
 	for ind = 1 : divNCell
 
 		if abs(ndoping_InAs) == ndoping_InAs
 			push!(optRsp, eps_emitter_n)
-			push!(trfFacs, abs_emitter_n_IBimag)
+			if Heat_or_Photon == 0
+				#checks heat transfer or photon count calculation  
+				push!(trfFacs,eps_emitter_n_imag)
+			else
+				push!(trfFacs, abs_emitter_n_IBimag)
+			end
 		else
 			push!(optRsp, eps_emitter_p)
-			push!(trfFacs, abs_emitter_p_IBimag)
+			if Heat_or_Photon == 0
+				#checks heat transfer or photon count calculation  
+				push!(trfFacs,eps_emitter_p_imag)
+			else
+				push!(trfFacs, abs_emitter_p_IBimag)
+			end
 		end
 	end
-	# P-type part of the PV cell. InAsSbP
+	# base layer of PV cell. InAsSbP
 	for ind = 1 : divPCell
 		
 		if abs(pdoping_InAs) == pdoping_InAs
 			push!(optRsp, eps_base_n)
-			push!(trfFacs, abs_base_n_IBimag)
+			if Heat_or_Photon == 0
+				#checks heat transfer or photon count calculation  
+				push!(trfFacs,eps_base_n_imag)
+			else
+				push!(trfFacs, abs_base_n_IBimag)
+			end
 		else
 			push!(optRsp, eps_base_p)
-			push!(trfFacs, abs_base_p_IBimag)
+			if Heat_or_Photon == 0
+				#checks heat transfer or photon count calculation  
+				push!(trfFacs,eps_base_p_imag)
+			else
+				push!(trfFacs, abs_base_p_IBimag)
+			end
 		end
 	end
-	#P-type substrate of PV cell. InAs
-	for ind = 1 : divSubCell
+	# substrate of PV cell, InAs. Also add the backing layer.
+	for ind = 1 : divSubCell + 1
+
+		if ind == divSubCell + 1 && thckSub < 30.0
+			# add gold backing if thin substrate
+			push!(optRsp, epsgold)
+			push!(trfFacs,eps_gold_imag)
+			continue
+		end
 
 		if abs(substrate_doping) == substrate_doping
 			push!(optRsp,eps_sub_n)
-			push!(trfFacs, abs_sub_n_IBimag)
+			if Heat_or_Photon == 0
+				#checks heat transfer or photon count calculation  
+				push!(trfFacs,eps_sub_n_imag)
+			else
+				push!(trfFacs, abs_sub_n_IBimag)
+			end
 		else
 			push!(optRsp,eps_sub_p)
-			push!(trfFacs, abs_sub_p_IBimag)
+			if Heat_or_Photon == 0
+				#checks heat transfer or photon count calculation  
+				push!(trfFacs,eps_sub_p_imag)
+			else
+				push!(trfFacs, abs_sub_p_IBimag)
+			end
 		end
 	end
-	# Optically thick backing, gold/p-InAs
-	push!(optRsp, epsgold)
-	push!(trfFacs,eps_gold_imag)
+
 	## Set which layers transmission should be calculated for.
-	lPairs = Array{Int64,2}(undef, 2, divProtCell + divNCell + divPCell + divSubCell)
+	if Heat_or_Photon == 0
+		NumberlPairs = divProtCell + divNCell + divPCell + divSubCell + 1
+	else
+		NumberlPairs = divProtCell + divNCell + divPCell + divSubCell + 1
+	end
+	lPairs = Array{Int64,2}(undef, 2, NumberlPairs)
 	#  layer pairs.
-	for ind = 1 : divNCell + divPCell + divSubCell + divProtCell
+	for ind = 1 : NumberlPairs
 
 		lPairs[1, ind] = numExtraLayers - 2
 		lPairs[2, ind] = numExtraLayers - 1 + ind
@@ -217,4 +275,4 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 	# Build layer description for heat transfer code.
 	return (lyrDsc(bdrLoc, tmpLst, optRsp, trfFacs),lPairs)
 end
-precompile(uOttawaSlabs_v3, (Float64, Float64, Int, Int, Int, Int,Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64))
+precompile(uOttawaSlabs_v3, (Float64, Float64, Int, Int, Int, Int,Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Int))
