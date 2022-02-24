@@ -13,7 +13,7 @@ const evJ = 1.6021774232052327e-19
 # T [K], d [um], dop [m-3]
 Rad_T=930.0
 firstgap_d=0.01
-Rad_d=5.0
+Rad_d=10.0
 gap_d=0.1
 fsf_d=0.2
 emitter_d=1.0
@@ -74,7 +74,7 @@ if !isfile(savFileDir*"/Photon Number_InGaAs/"*fName)
     mboxP = 0.0
     mboxSub = 1.0
     enrRng = (0.01, 1.5) #energy interval
-    #=
+    
     # Builds slab structure, generating lVar and lPairs.
     # Arguments are: temperature of the emitter, background temperature, divisions of NCell
     stats1 = @timed (lVar, lPairs) = uOttawaSlabs_v3_InGaAs_InP(Rad_T, 300.0, divProtCell, divNcell, divPcell, divSubCell, firstgap_d, Rad_d, gap_d, fsf_d, emitter_d, base_d, substrate_d, Rad_dop, fsf_dop, emitter_dop, base_dop,substrate_dop, base_As, fsf_As, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub,0)
@@ -96,15 +96,17 @@ if !isfile(savFileDir*"/Photon Number_InGaAs/"*fName)
     # Write results to file.
     write(fileStream, "Layer boundary edge (microns)	"*" Excitation Density Rate (W cm-2 microns-1)\n\n")
     # Location of cell boundary within the slab structure.
+    numLayers = divNcell + divPcell + divProtCell + divSubCell
     # Output calculation results.
-    for ind = 1 : length(htPairs) - 1
-        write(fileStream,  string(round((lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,1]-1]),sigdigits=4))*" "*string(round(htPairs[ind]/((lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,ind]-1])),sigdigits=4)) * " \n")
+    for ind = 1 : numLayers
+
+        write(fileStream,  string(round((lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,1]-1]),sigdigits=4))*" "*string(round(sum(htPairs[ind:numLayers+1:length(htPairs)])/((lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,ind]-1])),sigdigits=4)) * " \n")
     end
     #gold backing absorption
-    write(fileStream,  string(round((lVar.bdrLoc[lPairs[2,length(htPairs)-1]] - lVar.bdrLoc[lPairs[2,1]-1]),sigdigits=4))*" "*string(round(htPairs[length(htPairs)],sigdigits=4)) * " \n")
+    write(fileStream,  string(round((lVar.bdrLoc[lPairs[2,length(htPairs)-1]] - lVar.bdrLoc[lPairs[2,1]-1]),sigdigits=4))*" "*string(round(sum(htPairs[numLayers+1:numLayers+1length(htPairs)]),sigdigits=4)) * " \n")
     # Flush file stream.
     close(fileStream)
-    =#
+    
 
 
 
@@ -122,11 +124,14 @@ if !isfile(savFileDir*"/Photon Number_InGaAs/"*fName)
     stats = @timed heatTfr!(lVar, lPairs, enrRng, htPairs)
     #copy ouput into new array to use later
     htPairsNorm = copy(htPairs)
+    numLayersNorm = divNcell + divPcell + divProtCell + divSubCell
+
 
     #total current
-    println("Jph (uA) = ", @sprintf("%.2E",sum(htPairs)*1e6*0.0075^2*pi))   #0.0075 is the nearfield device radius 
+    #println( "Simulation runtime: " * string(stats.time) * " s.")
+    #println("Jph (uA) = ", @sprintf("%.2E",sum(htPairsNorm)*1e6*0.0075^2*pi))   #0.0075 is the nearfield device radius 
     
-    #=
+    
     ## simulation run with subdivisions for depth resolved currrent generation
     divProtCell = ceil(Int,sqrt(fsf_d*100))
     divNcell = ceil(Int,sqrt(emitter_d*100))
@@ -173,9 +178,15 @@ if !isfile(savFileDir*"/Photon Number_InGaAs/"*fName)
     write(fileStream, "Depth (microns)	"*" Excitation Density Rate (cm-2 microns-1 s-1)\n\n")
     idxNorm = 1
     extremes = [1,divProtCell]
+    numLayers = divNcell + divPcell + divProtCell + divSubCell
     # Output calculation results.
-    for ind = 1 : length(htPairs)
-        write(fileStream, string(round(htPairs[ind]/(sum(htPairs[extremes[1]:extremes[2]])*(lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,ind]-1])*evJ)*htPairsNorm[idxNorm],sigdigits=4)) * " \n")
+    for ind = 1 : numLayers
+        #calculate absorption within material layer i
+        normhtPairs = 0.0
+        for x = extremes[1]:extremes[2] 
+            normhtPairs += sum(htPairs[x:numLayers:length(htPairs)])
+        end
+        write(fileStream, string(round(sum(htPairs[ind:numLayers:length(htPairs)])/(normhtPairs*(lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,ind]-1])*evJ)*sum(htPairsNorm[idxNorm:numLayersNorm:length(htPairsNorm)]),sigdigits=4)) * " \n")
         #to go through all the layers
         if ind == divProtCell || ind == divProtCell + divNcell || ind == divProtCell + divNcell + divPcell
             global idxNorm += 1 
@@ -190,7 +201,7 @@ if !isfile(savFileDir*"/Photon Number_InGaAs/"*fName)
     end
     # Flush file stream.
     close(fileStream)
-    =#
+    
 end
 
 

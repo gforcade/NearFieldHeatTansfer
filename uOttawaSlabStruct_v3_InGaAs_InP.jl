@@ -13,25 +13,32 @@ const hbar = 1.05457*^(10,-34) #m2kg/s
 const hbEV = 6.5821*^(10,-16) #eV s
 function uOttawaSlabs_v3_InGaAs_InP(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCell::Int, divPCell::Int, divSubCell::Int, firstGap::Float64, thckRad::Float64, distGap::Float64, thckProt::Float64, thckInAs::Float64, thckInAsSbP::Float64, thckSub::Float64, Si_ndoping::Float64, prot_ndoping::Float64, ndoping_InAs::Float64, pdoping_InAs::Float64, substrate_doping::Float64, quat_x::Float64, prot_quat_x::Float64, mboxProt::Float64, mboxN::Float64, mboxP::Float64, mboxSub::Float64,xMinProt::Float64, xMinN::Float64, xMinP::Float64, xMinSub::Float64,Heat_or_Photon::Int)
 ### Settings
-	# Total number of layers.
+	# Total number of layers. + divide the radiator to have no more than 5 um thick slices
 	if firstGap == 0.0
 		numExtraLayers = 3
+		divRad = 1
 	else
-		numExtraLayers = 4
+		numExtraLayers = 5 #4
+		divRad = Int(ceil(thckRad/5.0))
 	end
+	numExtraLayers += divRad -1
 	numLayers = divProtCell + divNCell + divPCell + divSubCell + numExtraLayers
 	## Temperature list of the layers.
 	tmpLst = fill(tBck, numLayers)
 	# Set temperature of the emitter.
-	tmpLst[numExtraLayers-2] = tEmit
+	tmpLst[numExtraLayers-2-divRad:numExtraLayers-2] .= tEmit
 	## Boundary locations.
 	bdrLoc = Vector{Float64}(undef, numLayers - 1) 
 	bdrLoc[1] = 0.0
 	if firstGap == 0.0
 		bdrLoc[2] = distGap
 	else
-		bdrLoc[2] = thckRad  
-		bdrLoc[3] = distGap + thckRad
+		for ind = 1 : divRad
+			# apply radiator layering
+			bdrLoc[1+ind] = bdrLoc[ind] + thckRad / divRad
+		end
+		bdrLoc[numExtraLayers-2] = thckRad + 0.01
+		bdrLoc[numExtraLayers-1] = distGap + thckRad + 0.01
 	end
 	#fill boundaries with protection layer, using the graded layer thcikness scheme
 	for ind = 1 : divProtCell
@@ -95,6 +102,9 @@ function uOttawaSlabs_v3_InGaAs_InP(tEmit::Float64, tBck::Float64, divProtCell::
 	gRsp(enr) = cstRsp(1.0 + im * ^(10.0, -7), enr)
 	gAbs(enr) = 0.0
 
+	#AlN response.
+	eps_AlN(enr) = cstRsp(4.8 + im * 10.0^(-7),enr)
+	abs_AlN(enr) = imag(eps_AlN(enr))
 
 	###abs is the trfFacs to calculate photon numbers, the other imag is to calculate total heat transfer
 	#protection layer
@@ -158,8 +168,15 @@ function uOttawaSlabs_v3_InGaAs_InP(tEmit::Float64, tBck::Float64, divProtCell::
 		push!(optRsp, siRspE, gRsp) 
 		push!(trfFacs, siAbsE, gAbs)
 	else
-		push!(optRsp, gRsp, siRspE, gRsp) 
-		push!(trfFacs, gAbs, siAbsE, gAbs)
+		push!(optRsp, gRsp) 
+		push!(trfFacs, gAbs)
+		for ind = 1 : divRad
+			# add radiator segmented layers
+			push!(optRsp, siRspE) 
+			push!(trfFacs, siAbsE)
+		end
+		push!(optRsp, eps_AlN, gRsp) 
+		push!(trfFacs, abs_AlN, gAbs)
 	end
 	# Protection layer part of the PV cell
 	for ind = 1 : divProtCell
@@ -251,14 +268,16 @@ function uOttawaSlabs_v3_InGaAs_InP(tEmit::Float64, tBck::Float64, divProtCell::
 	else
 		NumberlPairs = divProtCell + divNCell + divPCell + divSubCell
 	end
-	lPairs = Array{Int64,2}(undef, 2, NumberlPairs)
+	lPairs = Array{Int64,2}(undef, 2, NumberlPairs*divRad)#*divRad)
 	#  layer pairs.
 	for ind = 1 : NumberlPairs
-
-		lPairs[1, ind] = numExtraLayers - 2
-		lPairs[2, ind] =  numExtraLayers - 1 + ind
+		
+		for dRad = 0 : divRad -1 
+			lPairs[1, ind + dRad*NumberlPairs] = numExtraLayers - 3 - dRad
+			lPairs[2, ind + dRad*NumberlPairs] =  numExtraLayers - 1 + ind
+		end
 	end
-
+	
 	# Build layer description for heat transfer code.
 	return (lyrDsc(bdrLoc, tmpLst, optRsp, trfFacs),lPairs)
 end

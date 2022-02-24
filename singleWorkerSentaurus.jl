@@ -2,7 +2,7 @@
 # new structure
 
 #directory to code
-savFileDir = "/home/gforc034/hs_Sean_02102021_v3"
+savFileDir = pwd()#"/home/gforc034/hs_Sean_02102021_v3"
 
 push!(LOAD_PATH,savFileDir)
 using Base.Threads, ProgressMeter, Roots, Base
@@ -12,20 +12,20 @@ const evJ = 1.6021774232052327e-19
 
 # T [K], d [um], dop [m-3]
 Rad_T=700.0
-firstgap_d=0.5
+firstgap_d=0.0
 Rad_d=30.0
 gap_d=0.1
-fsf_d=0.1
+fsf_d=2.0
 emitter_d=3.0
 base_d=2.0
 substrate_d=500.0
-Rad_dop=5.0*(10.0^19)
+Rad_dop=-5.0*(10.0^19)
 fsf_dop=3.0*(10.0^18)
 emitter_dop=3.0*(10.0^15)
-base_dop=5.0*(10.0^17)  #highest is best (proven)
-substrate_dop=5.0*(10.0^17)
-fsf_As=1.0
-base_As=0.5  #smallest is best because of higher bandgap
+base_dop=-3.0*(10.0^18)  #highest is best (proven)
+substrate_dop=-3.0*(10.0^18)
+fsf_As=0.75
+base_As=0.4  #smallest is best because of higher bandgap
 
 
 #changing the parameters from sentaurus units to optical model units
@@ -99,12 +99,13 @@ if !isfile(savFileDir*"/Photon Number/"*fName)
     # Write results to file.
     write(fileStream, "Layer boundary edge (microns)	"*" Excitation Density Rate (W cm-2 )\n\n")
     # Location of cell boundary within the slab structure.
+    numLayers = divNcell + divPcell + divProtCell + divSubCell
     # Output calculation results.
-    for ind = 1 : length(htPairs) - 1
-        write(fileStream,  string(round((lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,1]-1]),sigdigits=4))*" "*string(round(htPairs[ind],sigdigits=4)) * " \n")
+    for ind = 1 : numLayers
+        write(fileStream,  string(round((lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,1]-1]),sigdigits=4))*" "*string(round(sum(htPairs[ind:numLayers+1:length(htPairs)]),sigdigits=4)) * " \n")
     end
     #gold backing absorption
-    write(fileStream,  string(round((lVar.bdrLoc[lPairs[2,length(htPairs)-1]] - lVar.bdrLoc[lPairs[2,1]-1]),sigdigits=4))*" "*string(round(htPairs[length(htPairs)],sigdigits=4)) * " \n")
+    write(fileStream,  string(round((lVar.bdrLoc[lPairs[2,length(htPairs)-1]] - lVar.bdrLoc[lPairs[2,1]-1]),sigdigits=4))*" "*string(round(sum(htPairs[numLayers+1:numLayers+1:length(htPairs)]),sigdigits=4)) * " \n")
     # Flush file stream.
     close(fileStream)
 
@@ -126,7 +127,7 @@ if !isfile(savFileDir*"/Photon Number/"*fName)
     stats = @timed heatTfr!(lVar, lPairs, enrRng, htPairs)
     #copy ouput into new array to use later
     htPairsNorm = copy(htPairs)
-
+    numLayersNorm = divNcell + divPcell + divProtCell + divSubCell
 
 
     divProtCell = ceil(Int,sqrt(fsf_d*100))
@@ -167,9 +168,15 @@ if !isfile(savFileDir*"/Photon Number/"*fName)
     write(fileStream, "Depth (microns)	"*" Excitation Density Rate (cm-2 microns-1 s-1)\n\n")
     idxNorm = 1
     extremes = [1,divProtCell]
+    numLayers = divNcell + divPcell + divProtCell + divSubCell
     # Output calculation results.
-    for ind = 1 : length(htPairs) - 1
-        write(fileStream, string(round(htPairs[ind]/(sum(htPairs[extremes[1]:extremes[2]])*(lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,ind]-1])*evJ)*htPairsNorm[idxNorm],sigdigits=4)) * " \n")
+    for ind = 1 : numLayers
+         #calculate total absorption within material layer i
+         normhtPairs = 0.0
+         for x = extremes[1]:extremes[2] 
+             normhtPairs += sum(htPairs[x:numLayers:length(htPairs)])
+         end
+         write(fileStream, string(round(sum(htPairs[ind:numLayers:length(htPairs)])/(normhtPairs*(lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,ind]-1])*evJ)*sum(htPairsNorm[idxNorm:numLayersNorm:length(htPairsNorm)]),sigdigits=4)) * " \n")
         #to go through all the layers
         if ind == divProtCell || ind == divProtCell + divNcell || ind == divProtCell + divNcell + divPcell
             global idxNorm += 1 
