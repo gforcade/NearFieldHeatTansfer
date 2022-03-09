@@ -49,7 +49,7 @@ negligible in comparison to free carrier contributions.
 	#Timans
 	kIB = SialphaIB(enr, tmp) * muEv / enr * 1e-4 / (4.0 * pi )   #multiplying by 1e-4 to convert from um to cm
 	#J-M
-	return ^(sqrt(4.565 + /(97.3, ^(3.648,2) - ^(/(enr * 1.24, muEv), 2))) + (-1.864 * ^(10, -4) + 5.394 * /(^(10, -3), ^(3.648,2) - ^(/(enr * 1.24, muEv), 2))) * (tmp - 273.15) + im*kIB, 2) - /(^(hBEv * 1.0e13, 2), enr * (enr + im * 1.0e10 * hBEv)) 
+	return ^(sqrt(4.565 + /(97.3, ^(3.648,2) - ^(/(enr * 1.24, muEv), 2))) + (-1.864 * ^(10, -4) + 5.394 * /(^(10, -3), ^(3.648,2) - ^(/(enr * 1.24, muEv), 2))) * (tmp - 273.15) + im*kIB, 2) #- /(^(hBEv * 1.0e13, 2), enr * (enr + im * 1.0e10 * hBEv)) 
 	#=Li
 	lm = muEv / enr #lmabda in um
 	T = tmp - 273.15	#from K to C
@@ -194,7 +194,9 @@ Used as an implicit equation for determining the correct Fermi energy.
 """
 @inline function frmZero(enrFrm::Float64, tmp::Float64, dnr::dptDsc, acp::dptDsc)::Float64
 
-	return itrnV(tmp) * blkFD(-/(enrFrm, blzK * tmp)) + /(dnr.ccn, 1.0 + 2.0 * exp(/(enrFrm - dnr.enr, blzK * tmp))) - itrnC(tmp) * blkFD(/(enrFrm - siEnrGap(tmp), blzK * tmp)) - /(acp.ccn, 1.0 + 4.0 * exp(/(acp.enr - enrFrm, blzK * tmp)))
+	#return itrnV(tmp) * blkFD(-/(enrFrm, blzK * tmp)) + /(dnr.ccn, 1.0 + 2.0 * exp(/(enrFrm - dnr.enr, blzK * tmp))) - itrnC(tmp) * blkFD(/(enrFrm - siEnrGap(tmp), blzK * tmp)) - /(acp.ccn, 1.0 + 4.0 * exp(/(acp.enr - enrFrm, blzK * tmp)))
+	return itrnV(tmp) * blkFD(-/(enrFrm, blzK * tmp)) + dnrCcn(enrFrm,tmp,dnr) - itrnC(tmp) * blkFD(/(enrFrm - siEnrGap(tmp), blzK * tmp)) - acpCcn(enrFrm,tmp,acp)
+
 end
 precompile(frmZero, (Float64, Float64, dptDsc, dptDsc))
 """
@@ -208,10 +210,16 @@ function prmMSi(tmp::Float64, dnr::dptDsc, acp::dptDsc)::siDsc
 	# Self-consistent Fermi level.
 	frmFnc(flvl) = frmZero(flvl, tmp, dnr, acp)					#verified
 	enrFrm = find_zero(frmFnc, /(siEnrGap(tmp), 2.0))			#verified
-
+	
 	# Number of ionized acceptor and donor dopants (carriers), units cm^-3. 
-	cncDnr = dnrCcn(enrFrm, tmp, dnr)							#verified
-	cncAcp = acpCcn(enrFrm, tmp, acp)							#verified
+	#cncDnr = dnrCcn(enrFrm, tmp, dnr)							#verified
+	#cncAcp = acpCcn(enrFrm, tmp, acp)							#verified
+	
+	# Number of free electrons and holes (including from ionized dopants) Better than before is it now can accurately count carriers for low doping
+	cncDnr = itrnC(tmp) * blkFD(/(enrFrm - siEnrGap(tmp), blzK * tmp))
+	cncAcp = itrnV(tmp) * blkFD(-/(enrFrm, blzK * tmp))
+
+	intrinsic = sqrt(itrnC(tmp)*itrnV(tmp)*exp(-siEnrGap(tmp)/(blzK * tmp)))
 
 	# Room temperature total electron scattering time.
 	stETR = (141.0 + /(19.5, 1.0 + ^(/(dnr.ccn, 1.3 * ^(10.0, 17.0)), 0.91))) * 1.0e-15		#verified
@@ -243,7 +251,7 @@ function prmMSi(tmp::Float64, dnr::dptDsc, acp::dptDsc)::siDsc
 	mEffE = 0.27 
 	mEffH = 0.37
 
-	# Conversion factors for donor and acceptor contributions.
+	# Conversion factors for donor and acceptor contributions. units eV^2
 	dnrFac = /(cncDnr * hBEv^2 * ^(10.0, 9.0), mEffE * 0.5199895 * 55.26349406 * 0.01112265) #verified
 	acpFac = /(cncAcp * hBEv^2 * ^(10.0, 9.0), mEffH * 0.5199895 * 55.26349406 * 0.01112265) #verified
 
