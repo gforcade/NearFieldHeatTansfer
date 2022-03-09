@@ -91,9 +91,10 @@ Energy prefactor, W eV^-1 cm^-2, for fluctuating electric field intensity integr
 """
 @inline function flxPfc(lVar::lyrDsc, lPair::Union{Array{Int64,1},SubArray{Int64,1}}, enr::Float64)::Float64
 
-	return /(evJ * enr^2 * pi^3, 2.0^2 * muEv^2 * hBEv * ^(10.0, -8)) * (plcFnc(enr, lVar.tmpLst[lPair[1]]) - plcFnc(enr, lVar.tmpLst[lPair[2]]))
+	#return /(evJ * enr^2 * pi^3, 2.0^2 * muEv^2 * hBEv * ^(10.0, -8)) * (plcFnc(enr, lVar.tmpLst[lPair[1]]) - plcFnc(enr, lVar.tmpLst[lPair[2]])) ###error in units
+	return /(evJ * enr^2 * 2.0, muEv^2 * hBEv * ^(10.0, -8)) * (plcFnc(enr, lVar.tmpLst[lPair[1]]) - plcFnc(enr, lVar.tmpLst[lPair[2]]))
 end
-precompile(flxPfc, (lyrDsc, Union{Array{Int64,1},SubArray{Int64,1}}, Float64))
+precompile(flxPfc, (lyrDsc, Union{Array{Int64,1},SubArray{Int64,1}}, Float64))	
 """
 
 	prpLyr(dst::Float64, rsp::ComplexF64, wvc::Float64)::ComplexF64
