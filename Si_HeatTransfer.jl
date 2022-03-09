@@ -12,7 +12,7 @@ const evJ = 1.6021774232052327e-19
 
 # T [K], d [um]
 Si1_T=1000.0
-gap_d=10.0
+gap_d=0.1
 Si2_T=300.0
 
 
@@ -49,7 +49,7 @@ dnrDpt = dptDsc(0.0456, abs(Si2_dop))
 siModParamsE_top = prmMSi(Si1_T, dnrDpt_top, acpDpt_top)
 # Construct silicon response model.
 siRspE_top(enr) = siRsp(enr, siModParamsE_top)
-siAbsE_top(enr) = imag(siRspE(enr))
+siAbsE_top(enr) = imag(siRspE_top(enr))
 #Si for bottom layer
 siModParamsE = prmMSi(Si2_T, dnrDpt, acpDpt)
 # Construct silicon response model.

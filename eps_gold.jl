@@ -2,7 +2,8 @@ __precompile__()
 module eps_gold
 export epsgold
 @inline function epsgold(e_photon::Float64)::ComplexF64
-   # eVtoOmega = eV/hbar_eV
+    # verified by Gavin Forcade, March 2, 2022
+    # eVtoOmega = eV/hbar_eV
     eps_0 = 9.84
     wp = 9.010 #eV
     gamma = 0.072 #eV

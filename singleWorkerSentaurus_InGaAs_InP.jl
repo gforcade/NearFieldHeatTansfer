@@ -13,7 +13,7 @@ const evJ = 1.6021774232052327e-19
 # T [K], d [um], dop [m-3]
 Rad_T=930.0
 firstgap_d=0.01
-Rad_d=10.0
+Rad_d=60.0
 gap_d=0.1
 fsf_d=0.2
 emitter_d=1.0
@@ -128,8 +128,8 @@ if !isfile(savFileDir*"/Photon Number_InGaAs/"*fName)
 
 
     #total current
-    #println( "Simulation runtime: " * string(stats.time) * " s.")
-    #println("Jph (uA) = ", @sprintf("%.2E",sum(htPairsNorm)*1e6*0.0075^2*pi))   #0.0075 is the nearfield device radius 
+    println( "Simulation runtime: " * string(stats.time) * " s.")
+    println("Jph (uA) = ", @sprintf("%.2E",sum(htPairsNorm)*1e6*0.0075^2*pi))   #0.0075 is the nearfield device radius 
     
     
     ## simulation run with subdivisions for depth resolved currrent generation

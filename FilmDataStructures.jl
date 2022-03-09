@@ -25,7 +25,7 @@ Data structure describing properties of supposed dopants.
 
 # Arguments
 .enr: offset of impurity energy from band edge in electron volts.
-.ccn: impurity concentration in electron volts. 
+.ccn: impurity concentration in cm^-3. 
 """
 # Antimonide (n-type)
 # enr = 0.039

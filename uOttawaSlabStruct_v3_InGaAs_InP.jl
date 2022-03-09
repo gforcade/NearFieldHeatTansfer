@@ -144,7 +144,7 @@ function uOttawaSlabs_v3_InGaAs_InP(tEmit::Float64, tBck::Float64, divProtCell::
 	eps_base_p_imag(enr) = imag(eps_InP_ptype(enr,InAsSbPstructure))
 	
 
-	# InAs p-type subtrate doping and temperature
+	# bottom layer
 	pInAs_param = InGaAs_struct(abs(substrate_doping),300.0)
 	#n-type
 	eps_sub_n(enr) = eps_InGaAs_ntype(enr,pInAs_param)
@@ -268,7 +268,7 @@ function uOttawaSlabs_v3_InGaAs_InP(tEmit::Float64, tBck::Float64, divProtCell::
 	else
 		NumberlPairs = divProtCell + divNCell + divPCell + divSubCell
 	end
-	lPairs = Array{Int64,2}(undef, 2, NumberlPairs*divRad)#*divRad)
+	lPairs = Array{Int64,2}(undef, 2, NumberlPairs*divRad)
 	#  layer pairs.
 	for ind = 1 : NumberlPairs
 		
