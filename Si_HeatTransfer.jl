@@ -5,31 +5,30 @@
 savFileDir = pwd()#"/home/gforc034/hs_Sean_02102021_v3"
 
 push!(LOAD_PATH,savFileDir)
-using Base.Threads, ProgressMeter, Roots, Base, Printf
+using Base.Threads, ProgressMeter, Roots, Base, Printf,CSV,DataFrames,Plots
 using FilmDataStructures, FilmUtilities, ResponseModels
 const evJ = 1.6021774232052327e-19
 
 
-# T [K], d [um]
+#get data to compare
+data_Exp = CSV.read("../Si model validation/SiHeatTransfer_fig6_1e18.csv",DataFrame;header=2,type=Float64)
+p=plot(data_Exp[!,1],data_Exp[!,2],seriestype= :scatter,label="Them",markersize=3)
+
+
+
+# T [K], d [um], dop [cm-3]
 Si1_T=1000.0
-gap_d=0.1
+gap_d=exp10.(range(-3.0,stop=1.0,length=100))
 Si2_T=300.0
+Si1_dop = 1.0e10
+Si2_dop = 1.0e18
 
 
+    
+#fileStream = open("SiHeatTransfered.txt","w")
 
-#changing the parameters from sentaurus units to optical model units
-#dop in cm-3
-Si1_dop = 1.0e20
-Si2_dop = 1.0e20
-
-
-
+function SiHeatTransfer(Si1_T,Si2_T,Si1_dop,Si2_dop,gap_d)
 ####running simulations
-#file name
-fName = "SiRad"#"Rad"*string(trunc(Int,round(Rad_T)))*"fstGap"*string(trunc(Int,round(firstgap_d*1000)))*"Si"*string(trunc(Int,round(Rad_d*1000)))*"Dop"*string(round(Rad_dop/1000000,sigdigits=1))*"Gap"*string(trunc(Int,round(gap_d*1000)))*"fsf"*string(trunc(Int,round(fsf_d*1000)))*"As"*string(round(fsf_As,sigdigits=1))*"Dop"*string(round(fsf_dop/1000000,sigdigits=1))*"InAs"*string(trunc(Int,round(emitter_d*1000)))*"Dop"*string(round(emitter_dop/1000000,sigdigits=1))*"Q"*string(trunc(Int,round(base_d*1000)))*"As"*string(round(base_As,sigdigits=1))*"Dop"*string(round(base_dop/1000000,sigdigits=1))*"Sub"*string(trunc(Int,round(substrate_d*1000)))*"Dop"*string(round(substrate_dop/1000000,sigdigits=1))*".txt"
-#only simulate if file not present
-#if !isfile(savFileDir*"/Photon Number/"*fName)
-####simulations for energy transfer
 
 #temperature of layers
 numLayers = 3
@@ -74,50 +73,23 @@ lVar = lyrDsc(bdrLoc, tmpLst, optRsp, trfFacs)
 
 enrRng = (6.6e-4, 1.319) #energy interval
 # Builds slab structure, generating lVar and lPairs.
-# Arguments are: temperature of the emitter, background temperature, divisions of NCell
-
-
-
 # Storage for heat transfer computations.
 htPairs = Array{Float64,1}(undef, size(lPairs)[2])
 # Compute heat transfer using heat transfer function.
 stats2 = @timed heatTfr!(lVar, lPairs, enrRng, htPairs)
-# Open output file.
-#=
-fileStream = open(savFileDir*"/Total Heat Transfer/"*fName,"w")
-# Double check thread initialization.
-write(fileStream, "Julia initialized with "*string(nthreads())*" threads.\n\n")
-## External program settings, internal setting contained in uOttawaSlabStruct.jl
-## Begin program execution.
-write(fileStream, "Execution:\n")
-write(fileStream, "Layer structure constructed in " * string(stats1.time) * " s.\n")
-write(fileStream, "Generated excitation profile computed " * string(stats2.time) * " s.\n")
-write(fileStream,string(xMinN)*" "*string(xMinP)*" 0.0 "*string(xMinProt)*" xMin for mbox meshing. Emitter, Base, Substrate, Prot respectively. \n")
-write(fileStream,string(divNcell)*" "*string(divPcell)*" "*string(divSubCell)*" "*string(divProtCell)*" of slices for emitter, base, and Substrate, Prot respectively.\n\n")
-# Write results to file.
-write(fileStream, "Layer boundary edge (microns)	"*" Excitation Density Rate (W cm-2 microns-1)\n\n")
-# Location of cell boundary within the slab structure.
-# Output calculation results.
-for ind = 1 : length(htPairs) - 1
-    write(fileStream,  string(round((lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,1]-1]),sigdigits=4))*" "*string(round(htPairs[ind]/((lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,ind]-1])),sigdigits=4)) * " \n")
-end
-#gold backing absorption
-write(fileStream,  string(round((lVar.bdrLoc[lPairs[2,length(htPairs)-1]] - lVar.bdrLoc[lPairs[2,1]-1]),sigdigits=4))*" "*string(round(htPairs[length(htPairs)],sigdigits=4)) * " \n")
-# Flush file stream.
-close(fileStream)
-=#
+
 println("Heattransfer execution time = ",stats2.time)
 println("Total heat transfer (W/m2) = ", @sprintf("%.2E",sum(htPairs)*1e4))
-    
 
-
-   
-#end
-
+return sum(htPairs)*1e4
+end
 
 
 
+# run function and store output
+htTransfer = Array{Float64,1}(undef, size(gap_d))
+for i = 1:length(gap_d)
+        htTransfer[i] = SiHeatTransfer(Si1_T,Si2_T,Si1_dop,Si2_dop,gap_d[i])
+end
 
-
-
-
+plot!(p,gap_d,htTransfer, xlims=(1e-3,1e1), ylims=(1e4,1e8), xaxis=:log10, yaxis=:log10,     label="Us", xlabel = "Seperation distance (um)", ylabel = "Heat (W m-2)", thickness_scaling = 2, linewidth=2,legend=:topright) 

@@ -47,16 +47,15 @@ negligible in comparison to free carrier contributions.
 @inline function siRspBck(enr::Float64, tmp::Float64)::ComplexF64
 	#Gavin: Changed T -> T - 273.15  #equation from reference says T is in celsius 
 	#Timans
-	kIB = SialphaIB(enr, tmp) * muEv / enr * 1e-4 / (4.0 * pi )   #multiplying by 1e-4 to convert from um to cm
+	kIB = SialphaIB(enr, tmp) * muEv * 1e-4 / (4.0 * pi * enr)   #multiplying by 1e-4 to convert from um to cm ## verified
 	#J-M
-	return ^(sqrt(4.565 + /(97.3, ^(3.648,2) - ^(/(enr * 1.24, muEv), 2))) + (-1.864 * ^(10, -4) + 5.394 * /(^(10, -3), ^(3.648,2) - ^(/(enr * 1.24, muEv), 2))) * (tmp - 273.15) + im*kIB, 2) #- /(^(hBEv * 1.0e13, 2), enr * (enr + im * 1.0e10 * hBEv)) 
-	#=Li
+	#return ^(sqrt(4.565 + /(97.3, ^(3.648,2) - ^(/(enr * 1.24, muEv), 2))) + (-1.864 * ^(10, -4) + 5.394 * /(^(10, -3), ^(3.648,2) - ^(/(enr * 1.24, muEv), 2))) * (tmp - 273.15) + im*kIB, 2) #- /(^(hBEv * 1.0e13, 2), enr * (enr + im * 1.0e10 * hBEv)) 
+	#Li #verified
 	lm = muEv / enr #lmabda in um
-	T = tmp - 273.15	#from K to C
-	eps_r = 11.631 + 1.0268e-3 * T + 1.0384e-6 * T^2.0 - 8.1347e-10 * T^3.0
-	g = 1.0204 + 4.8011e-4 * T + 7.3835e-8 * T^2.0 
-	n = exp(1.786e-4 - 8.526e-6 * T - 4.685e-9 * T^2.0 + 1.363e-12 * T^3.0)
-	return eps_r + g*n/lm^2.0 =#
+	eps_r = 11.4445 + 2.7739e-4 * tmp + 1.7050e-6 * tmp^2.0 - 8.1347e-10 * tmp^3.0
+	g = 0.8948 + 4.3977e-4 * tmp + 7.3835e-8 * tmp^2.0 
+	n = exp(-3.0*(-0.071 + 1.887e-6 * tmp + 1.934e-9 * tmp^2.0 - 4.544e-13 * tmp^3.0))
+	return ^( sqrt(eps_r + g*n / lm^2.0) + im*kIB,2.0)
 end
 precompile(siRspBck, (Float64, Float64))
 
@@ -122,7 +121,7 @@ precompile(Sialpha4a, (Float64, Float64 ))
 	if enr < siEnrGap(tmp) - 8.6173e-5 * Tcoeff
 		return 0.0
 	else
-		return coef*(enr - siEnrGap(tmp) + 8.6173e-5*Tcoeff)^2.0 / (enr*(exp(Tcoeff/tmp - 1.0)))
+		return coef*(enr - siEnrGap(tmp) + 8.6173e-5*Tcoeff)^2.0 / (enr*(exp(Tcoeff/tmp) - 1.0))
 	end
 end
 precompile(Sialphaia, (Float64, Float64, Float64, Float64 ))
@@ -164,11 +163,35 @@ end
 precompile(itrnC, (Float64, ))
 """
 
+	SiMobn(dnr::dptDsc)::Float64 
+
+Electron mobility vs doping concentration at room temperature. Doping in cm^-3. Output in cm^2/(V s)
+From: Basu et al. "Infrared radiative properties of heavily doped silicon at room temperature", 2010
+"""
+@inline function SiMobn(eCon::Float64)::Float64 
+
+	return 68.5 + (1414.0 - 68.5) / (1.0 + (eCon/9.2e16)^0.711) - 56.5 / (1.0 + (3.41e20 / eCon)^1.98) 
+end
+precompile(SiMobn, (Float64, ))
+"""
+
+	SiMobp(acp::dptDsc)::Float64 
+
+
+Hole mobility vs doping concentration at room temperature. Doping in cm^-3. Output in cm^2/(V s)
+From: Basu et al. "Infrared radiative properties of heavily doped silicon at room temperature", 2010
+"""
+@inline function SiMobp(hCon::Float64)::Float64 
+
+	return 44.9 * exp(-9.23e16/hCon) + 470.0 / (1.0 + (hCon/9.2e16)^0.719) - 29.0 / (1.0 + (3.41e20 / hCon)^2.0) 
+end
+precompile(SiMobp, (Float64, ))
+"""
+
 	function dnrCcn(enrFrm::Float64, tmp::Float64, acp::dptDsc)::Float64	
 
 Acceptor concentration function. 
 """
-
 @inline function acpCcn(enrFrm::Float64, tmp::Float64, acp::dptDsc)::Float64
 
 	return acp.ccn * (1.0 - /(4.0, 4.0  + exp(/(enrFrm - acp.enr, blzK * tmp))))
@@ -201,6 +224,38 @@ end
 precompile(frmZero, (Float64, Float64, dptDsc, dptDsc))
 """
 
+	function Ci(enrFrm::Float64, tmp::Float64, dnr::dptDsc)::Float64
+Basu, Lee, Zhang. "Infrared radiative properties of heavily doped silicon at room temperature", 2010.
+Ratio of concentration of ionized dopant atoms to the total doping concentration
+Used this model in Mittapaly et al. 2021. Provided excellent fitting.
+"""
+@inline function Ci( tmp::Float64, N::Float64, Dopant_Type::Bool)::Float64
+	#N is dopant concentration
+	#tmp is temperature of material
+	if Dopant_Type == true
+		#n-type doping
+		A = 0.0824 * (tmp / 300.0)^(-1.622)
+		N0 = 1.6e18 * (tmp / 300.0)^(0.7267)
+		if N < N0
+			B = 0.4722 * (tmp / 300.0)^(0.0652)
+		else
+			B = 1.23 - 0.3162 * (tmp / 300.0)
+		end
+	else
+		#p-type doping
+		A = 0.2364 * (tmp / 300.0)^(-1.474)
+		N0 = 1.577e18 * (tmp / 300.0)^(0.46)
+		if N < N0
+			B = 0.433 * (tmp / 300.0)^(0.2213)
+		else
+			B = 1.268 - 0.338 * (tmp / 300.0)
+		end
+	end
+	return 1.0 - A*exp(-(B*log(N/N0))^2.0)
+end
+precompile(dnrCcn, (Float64, Float64, Bool))
+"""
+
 	prmMSi(tmp::Float64, dnr::dptDsc, acp::dptDsc)::siDsc
 
 Computation of model parameters for doped silicon, see preamble of source file for details. 
@@ -211,21 +266,48 @@ function prmMSi(tmp::Float64, dnr::dptDsc, acp::dptDsc)::siDsc
 	frmFnc(flvl) = frmZero(flvl, tmp, dnr, acp)					#verified
 	enrFrm = find_zero(frmFnc, /(siEnrGap(tmp), 2.0))			#verified
 	
-	# Number of ionized acceptor and donor dopants (carriers), units cm^-3. 
+	
+	# assumes model from Gaylord
+	# Number of ionized acceptor and donor dopants (carriers), units cm^-3. Does not include free carriers of undoped material
 	#cncDnr = dnrCcn(enrFrm, tmp, dnr)							#verified
 	#cncAcp = acpCcn(enrFrm, tmp, acp)							#verified
-	
-	# Number of free electrons and holes (including from ionized dopants) Better than before is it now can accurately count carriers for low doping
+	"""
+	# Number of free electrons and holes (including from ionized dopants) Better than before as it now can accurately count carriers for low doping
 	cncDnr = itrnC(tmp) * blkFD(/(enrFrm - siEnrGap(tmp), blzK * tmp))
 	cncAcp = itrnV(tmp) * blkFD(-/(enrFrm, blzK * tmp))
+	"""
 
-	intrinsic = sqrt(itrnC(tmp)*itrnV(tmp)*exp(-siEnrGap(tmp)/(blzK * tmp)))
+	## Assumes Basu 2010 model
+	#Number of free electrons and holes
+	Nth2 = itrnC(tmp) * itrnV(tmp) * exp(-/(siEnrGap(tmp), blzK * tmp))
+	if acp.ccn == 0.0
+		cncDnr = Ci(tmp,dnr.ccn,true) * dnr.ccn 
+		cncDnr = 0.5 * (cncDnr + sqrt(cncDnr^2.0 + 4.0*Nth2))
+		cncAcp = Nth2 / cncDnr
+	else
+		cncAcp = Ci(tmp,acp.ccn,false) * acp.ccn 
+		cncAcp = 0.5 * (cncAcp + sqrt(cncAcp^2.0 + 4.0*Nth2))
+		cncDnr = Nth2 / cncAcp
+	end
+	
+	# Electron and hole effective masses. #verified
+	mEffE = 0.27 
+	mEffH = 0.37
 
+	"""
+	## Fu and Zhang model
 	# Room temperature total electron scattering time.
 	stETR = (141.0 + /(19.5, 1.0 + ^(/(dnr.ccn, 1.3 * ^(10.0, 17.0)), 0.91))) * 1.0e-15		#verified
 	# Room temperature total hole scattering time.
 	stHTR = (10.0 + /(94.0, 1.0 + ^(/(acp.ccn, 1.9 * ^(10.0, 17.0)), 0.76))) * 1.0e-15		#verified
+	"""
 
+	## Basu 2010 model
+	# Room temperature total electron scattering time.
+	stETR = ^(e / (mEffE*m_0 * SiMobn(dnr.ccn)/10000.0), -1.0)		#verified
+	# Room temperature total hole scattering time.
+	stHTR = ^(e / (mEffH*m_0 * SiMobp(acp.ccn)/10000.0),-1.0)		#verified
+	
 	# Room temperature electron-lattice scattering time.
 	stELR = 2.23 * 1.0e-13											#verified
 	# Room temperature hole-lattice scattering time.
@@ -234,25 +316,22 @@ function prmMSi(tmp::Float64, dnr::dptDsc, acp::dptDsc)::siDsc
 	stEIR = /(stETR * stELR, stELR - stETR) 						#verified
 	# Room temperature hole-impurity scattering time. 
 	stHIR = /(stHTR * stHLR, stHLR - stHTR) 						#verified
-
+    
 	# Include temperature dependence scattering times.
 	# Electrons 
-	stEI = stEIR * ^(/(tmp, 300), 1.5)								#verified
-	stEL = stELR * ^(/(tmp, 300), -3.8)								#verified
+	stEI = stEIR * ^(/(tmp, 300.0), 1.5)								#verified
+	stEL = stELR * ^(/(tmp, 300.0), -3.8)								#verified
 	# Holes
-	stHI = stHIR * ^(/(tmp, 300), 1.5)								#verified
-	stHL = stHLR * ^(/(tmp, 300), -3.6)								#verified
+	stHI = stHIR * ^(/(tmp, 300.0), 1.5)								#verified
+	stHL = stHLR * ^(/(tmp, 300.0), -3.6)								#verified
 
-	# Total donor and acceptor decay rates.  
-	dnrDcy = hBEv * (/(1.0, stEI) + /(1.0, stEL))
-	acpDcy = hBEv * (/(1.0, stHI) + /(1.0, stHL))
+	# Total donor and acceptor decay rates.  in eV
+	dnrDcy = hBEv * (/(1.0, stEI) + /(1.0, stEL)) 
+	acpDcy = hBEv * (/(1.0, stHI) + /(1.0, stHL)) 
 
-	# Electron and hole effective masses. #verified
-	mEffE = 0.27 
-	mEffH = 0.37
 
 	# Conversion factors for donor and acceptor contributions. units eV^2
-	dnrFac = /(cncDnr * hBEv^2 * ^(10.0, 9.0), mEffE * 0.5199895 * 55.26349406 * 0.01112265) #verified
+	dnrFac = /(cncDnr * hBEv^2 * ^(10.0, 9.0), mEffE * 0.5199895 * 55.26349406 * 0.01112265)  #verified
 	acpFac = /(cncAcp * hBEv^2 * ^(10.0, 9.0), mEffH * 0.5199895 * 55.26349406 * 0.01112265) #verified
 
 	return siDsc(tmp, dnrFac, acpFac, dnrDcy, acpDcy)

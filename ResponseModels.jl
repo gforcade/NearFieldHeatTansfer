@@ -16,6 +16,7 @@ const eps_0 = 8.8542*^(10,-12)
 const hbar = 1.05457*^(10,-34) #m2kg/s
 const kb = 8.617333*^(10,-5) #eV K-1
 const m_0 = 0.9109*^(10,-30)
+const e = 1.6e-19 #C
 
 @inline function cstRsp(cst::ComplexF64, enr::Float64)::ComplexF64
 
@@ -123,18 +124,20 @@ precompile(eVtoOmega, (Float64,))
 
 @inline function eps_InAs_struct(N0,T)
 	E0_T_InAs_value = E0_T_InAs(N0,T)
-	E0_T_InAs_value_ptype = E0_T_InAs_ptype(N0,T)
-	mstar= 0.024*m_0  #m_star(N0)
+	E0_T_InAs_value_ptype = E0_T_InAs(N0,T)
+	mstar= 0.024*m_0  
+	del = 0.39  # eV, split-off band energy
+	#mstar = m_star(N0,E0_T_InAs_value,m0_star,del)
 	mstar_ptype_lh = 0.026*m_0
 	mstar_ptype_hh = 0.36*m_0
 	mstar_ptype = m_star_ptype(mstar_ptype_hh,mstar_ptype_lh)
-	gamma_ntype = Gamma_ntype(N0,T)
+	gamma_ntype = Gamma_ntype(N0,T,mstar)
 	gamma_ptype = Gamma_ptype(N0,T,mstar_ptype)
 	eps_inf = 11.6 #eps_inf parameter, same as in the gamma function
 	P = 9.05e-8 #8.58e-8		#eV cm #comes from same place as InAsSbP params 
 	#calculating the fermi energy
 	Nc = 2.0*(3.0*E0_T_InAs_value*kb*T/(8.0*pi*P^2.0))^(3.0/2.0) #9.3301e16 #cm-3 #value from Sentaurus
-	res = optimize(t -> fermi(t,E0_T_InAs_value/(kb*T),pi^(1/2)/2*N0/(Nc*10.0^6)),[E0_T_InAs_value],Newton()) #Nc*1e6 because: from cm-3 to m-3
+	res = optimize(t -> fermi(t,1.0/(kb*T*np_factor(del,E0_T_InAs_value,mstar)),pi^(1/2)/2*N0/(Nc*10.0^6)),[E0_T_InAs_value],Newton()) #Nc*1e6 because: from cm-3 to m-3
 	F = Optim.minimizer(res)[1]*kb*T + E0_T_InAs_value #fermi energy relative to valence band
     return InAsDsc(N0,T,mstar,mstar_ptype,mstar_ptype_hh,mstar_ptype_lh,gamma_ntype,gamma_ptype,E0_T_InAs_value,E0_T_InAs_value_ptype,eps_inf,P,F)
 end
