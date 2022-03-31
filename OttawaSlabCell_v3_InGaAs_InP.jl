@@ -1,6 +1,6 @@
 __precompile__()
 module OttawaSlabCell_v3_InGaAs_InP
-using FilmDataStructures, ResponseModels,eps_gold,eps_InGaAs,eps_InP
+using FilmDataStructures, ResponseModels,eps_gold,eps_InGaAs,eps_InP,epsAlN
 export uOttawaSlabs_v3_InGaAs_InP
 # Code for initializing uOttawa slab structure 
 include("uOttawaSlabStruct_v3_InGaAs_InP.jl")

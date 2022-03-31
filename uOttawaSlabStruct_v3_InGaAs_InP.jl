@@ -18,7 +18,7 @@ function uOttawaSlabs_v3_InGaAs_InP(tEmit::Float64, tBck::Float64, divProtCell::
 		numExtraLayers = 3
 		divRad = 1
 	else
-		numExtraLayers = 5 #4
+		numExtraLayers = 6 #5 
 		divRad = Int(ceil(thckRad/5.0))
 	end
 	numExtraLayers += divRad -1
@@ -26,19 +26,21 @@ function uOttawaSlabs_v3_InGaAs_InP(tEmit::Float64, tBck::Float64, divProtCell::
 	## Temperature list of the layers.
 	tmpLst = fill(tBck, numLayers)
 	# Set temperature of the emitter.
-	tmpLst[numExtraLayers-2-divRad:numExtraLayers-2] .= tEmit
+	tmpLst[numExtraLayers-3-divRad:numExtraLayers-2] .= tEmit
 	## Boundary locations.
 	bdrLoc = Vector{Float64}(undef, numLayers - 1) 
 	bdrLoc[1] = 0.0
 	if firstGap == 0.0
 		bdrLoc[2] = distGap
 	else
+		#AlN
+		bdrLoc[2] = 0.01
 		for ind = 1 : divRad
 			# apply radiator layering
-			bdrLoc[1+ind] = bdrLoc[ind] + thckRad / divRad
+			bdrLoc[2+ind] = bdrLoc[ind + 1] + thckRad / divRad
 		end
-		bdrLoc[numExtraLayers-2] = thckRad + 0.01
-		bdrLoc[numExtraLayers-1] = distGap + thckRad + 0.01
+		bdrLoc[numExtraLayers-2] = thckRad + 0.01*2.0
+		bdrLoc[numExtraLayers-1] = distGap + thckRad + 0.01*2.0
 	end
 	#fill boundaries with protection layer, using the graded layer thcikness scheme
 	for ind = 1 : divProtCell
@@ -103,7 +105,8 @@ function uOttawaSlabs_v3_InGaAs_InP(tEmit::Float64, tBck::Float64, divProtCell::
 	gAbs(enr) = 0.0
 
 	#AlN response.
-	eps_AlN(enr) = cstRsp(4.8 + im * 10.0^(-7),enr)
+	AlNStructure = AlN_struct(300.0)
+	eps_AlN(enr) = epsAlN_func(enr,AlNStructure) #cstRsp(4.8 + im * 10.0^(-7),enr)
 	abs_AlN(enr) = imag(eps_AlN(enr))
 
 	###abs is the trfFacs to calculate photon numbers, the other imag is to calculate total heat transfer
@@ -168,8 +171,8 @@ function uOttawaSlabs_v3_InGaAs_InP(tEmit::Float64, tBck::Float64, divProtCell::
 		push!(optRsp, siRspE, gRsp) 
 		push!(trfFacs, siAbsE, gAbs)
 	else
-		push!(optRsp, gRsp) 
-		push!(trfFacs, gAbs)
+		push!(optRsp, gRsp, eps_AlN) 
+		push!(trfFacs, gAbs, abs_AlN)
 		for ind = 1 : divRad
 			# add radiator segmented layers
 			push!(optRsp, siRspE) 
@@ -262,18 +265,18 @@ function uOttawaSlabs_v3_InGaAs_InP(tEmit::Float64, tBck::Float64, divProtCell::
 	# Optically thick backing, gold/p-InAs
 	push!(optRsp, epsgold)
 	push!(trfFacs,eps_gold_imag)
-	## Set which layers transmission should be calculated for.
+	## Set which layers absorption should be calculated for.
 	if Heat_or_Photon == 0
 		NumberlPairs = divProtCell + divNCell + divPCell + divSubCell + 1
 	else
 		NumberlPairs = divProtCell + divNCell + divPCell + divSubCell
 	end
-	lPairs = Array{Int64,2}(undef, 2, NumberlPairs*divRad)
+	lPairs = Array{Int64,2}(undef, 2, NumberlPairs*(divRad + 2))
 	#  layer pairs.
 	for ind = 1 : NumberlPairs
 		
-		for dRad = 0 : divRad -1 
-			lPairs[1, ind + dRad*NumberlPairs] = numExtraLayers - 3 - dRad
+		for dRad = 0 : divRad + 2 -1 
+			lPairs[1, ind + dRad*NumberlPairs] = numExtraLayers - 2 - dRad
 			lPairs[2, ind + dRad*NumberlPairs] =  numExtraLayers - 1 + ind
 		end
 	end
