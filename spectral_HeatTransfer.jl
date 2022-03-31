@@ -34,16 +34,16 @@ function heatLayersFunc(var1::Float64,var2::Float64)
     d_prot= 2.0
     d_InAs_total = 10.0
     d_InAsSbP_base = 2.0
-    d_InAs_sub = 500.0
-    Si_ndoping = 1.0*(10.0^21) #25
-    ndoping_InAs = 6.0*(10.0^20)
-    quat_x = 1.0  #smallest is best because of higher bandgap
+    d_InAs_sub = 200.0
+    Si_ndoping = 1.0e15 *1.0e6 #25
+    prot_ndoping = -1.0e18 *1.0e6
+    ndoping_InAs = 6.0e14 *1.0e6
+    pdoping_InAs = 1.0e18 *1.0e6  #highest is best (proven)
+    substrate_dop = 2.0e18 *1.0e6
     prot_quat_x = 1.0
-    prot_ndoping = -1.0*(10.0^24)
-    pdoping_InAs = 1.0*(10.0^24)  #highest is best (proven)
-    substrate_dop = 3.0*(10.0^24)
+    quat_x = 1.0  #smallest is best because of higher bandgap
     #output folder
-    fName = "Results for Opt Article\\"
+    fName = "Results for Opt Article_v2\\"
 
     
     ####
@@ -59,7 +59,7 @@ function heatLayersFunc(var1::Float64,var2::Float64)
     divProtCell = 1
     divNcell = 1
     divPcell = 1 
-    if d_InAs_sub == 0.0 || d_InAs_sub > 30.0
+    if d_InAs_sub == 0.0 || d_InAs_sub > 5000.0
         divSubCell = 0
         mboxSub = 0.0
     else
@@ -105,7 +105,7 @@ function heatLayersFunc(var1::Float64,var2::Float64)
             write(fileStream,  string(round((lVar.bdrLoc[lPairs[2,ind]] - lVar.bdrLoc[lPairs[2,1]-1]),sigdigits=4))*" "*string(round(sum(htPairs[ind:numLayers+1:length(htPairs)]),sigdigits=4)) * " \n")
         end
         #gold or substrate backing absorption
-        if d_InAs_sub > 30.0
+        if d_InAs_sub > 5000.0
             write(fileStream,  string(round(d_InAs_sub,sigdigits=4))*" "*string(round(sum(htPairs[numLayers+1:numLayers+1:length(htPairs)]),sigdigits=4)) * " \n")
             write(fileStream,  string(round(d_InAs_sub,sigdigits=4))*" "*string(round(0.0,sigdigits=4)) * " \n")
         else

@@ -244,7 +244,7 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 	# substrate of PV cell, InAs. Also add the backing layer.
 	for ind = 1 : divSubCell + 1
 
-		if ind == divSubCell + 1 && thckSub < 30.0
+		if ind == divSubCell + 1 && thckSub < 5000.0
 			# add gold backing if thin substrate
 			push!(optRsp, epsgold)
 			push!(trfFacs,eps_gold_imag)
@@ -271,7 +271,7 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 	end
 
 	## Set which layers transmission should be calculated for
-	if Heat_or_Photon == 0 || thckSub >= 30.0
+	if Heat_or_Photon == 0 || thckSub >= 5000.0
 		NumberlPairs = divProtCell + divNCell + divPCell + divSubCell + 1
 	else 
 		NumberlPairs = divProtCell + divNCell + divPCell + divSubCell 

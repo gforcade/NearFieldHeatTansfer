@@ -64,7 +64,7 @@ if !isfile(savFileDir*"/Photon Number/"*fName)
     divProtCell = 1
     divNcell = 1
     divPcell = 1 
-    if substrate_d == 0.0 || substrate_d > 30.0
+    if substrate_d == 0.0 || substrate_d > 5000.0
         divSubCell = 0 
         xMinSub = 0.0
         mboxSub = 0.0
@@ -133,14 +133,18 @@ if !isfile(savFileDir*"/Photon Number/"*fName)
     divProtCell = ceil(Int,sqrt(fsf_d*100))
     divNcell = ceil(Int,sqrt(emitter_d*100))
     divPcell = ceil(Int,sqrt(base_d*100))
+    mboxSuber(x) = mboxish(x,divSubCell,substrate_d/xMinSub)
     if substrate_d == 0.0
         divSubCell = 0 
         xMinSub = 0.0
         mboxSub = 1.0
-    else 
+    elseif substrate_d < 5000.0
+        divSubCell = ceil(Int,sqrt(substrate_d*100))
+        xMinSub = 0.01
+        mboxSub = find_zero(mboxSuber,2.0,Order5())
+    else
         divSubCell = 30
         xMinSub = 0.1
-        mboxSuber(x) = mboxish(x,divSubCell,substrate_d/xMinSub)
         mboxSub = find_zero(mboxSuber,2.0,Order5())
     end
     ## External program settings, internal setting contained in uOttawaSlabStruct.jl
