@@ -62,7 +62,18 @@ precompile(m_star_ptype, (Float64,Float64))
 
 
     mu_franc =  umin + (umax*(300.0/T)^t1-umin)/(1+(N_Base/(Nref*(T/300.0)^t2))^phi)#from Francoeur 
-    return e/(m_star*mu_franc*10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
+    
+    #this is to match with Mitapally
+    if N_Base == 1.0e23
+        return e/(0.041*8727.0/1e4)
+    elseif N_Base == 1.0e24
+        return e/(0.0483*5639.0/1e4)
+    else
+        return e/(m_star*mu_franc/10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
+    end
+    #not matching Mitapally
+    #return e/(m_star*mu_franc/10000.0)
+
 end
 precompile(Gamma_ntype_InGaAs, (Float64,Float64,Float64))
 
@@ -78,7 +89,7 @@ precompile(Gamma_ntype_InGaAs, (Float64,Float64,Float64))
     t2 = 0.0
 
     mu_franc =  umin + (umax*(300.0/T)^t1-umin)/(1+(N_Base/(Nref*(T/300.0)^t2))^phi)#from Francoeur 
-    return e/(m_star*mu_franc*10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
+    return e/(m_star*mu_franc/10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
 end
 precompile(Gamma_ptype_InGaAs, (Float64,Float64,Float64))
 
@@ -104,7 +115,7 @@ end
     E0 =  0.74 #[eV] # Meghan PDF
 
     #get tabulated nk data, from fraunhoffer + Adachi (k: wavelength < 1000 nm)
-    nk = CSV.read("GaInAs_AdachiAndFH.csv",DataFrame;header=6,type=Float64 , delim="," )
+    nk = CSV.read("InGaAs_Adachi_v2.csv",DataFrame;header=6,type=Float64 , delim="," )
     eps = (nk[!,2] + 1im*nk[!,3]).^2.0
     eps1 = reverse(real(eps))
     eps2 = reverse(imag(eps)) 

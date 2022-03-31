@@ -32,21 +32,9 @@ precompile(m_star_ptype, (Float64,Float64))
     t1 = 2.3
     t2 = 3.0
     mu_franc =  umin + (umax*(300.0/T)^t1-umin)/(1+(N_Base/(Nref*(T/300.0)^t2))^phi)#from Francoeur 
-    return e/(m_star_ptype*mu_franc*10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
+    return e/(m_star_ptype*mu_franc/10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
 end
 precompile(Gamma_ptype, (Float64,Float64,Float64))
-
-@inline function E0_T_InAs_ptype(N0,T) 
-    #delta_Eg_InAs = A_InAs*(N0/10^6)^(1/3) + B_InAs*(N0/10^6)^(1/4) + C_InAs*(N0/10^6)^(1/2)
-    E0_InAs = 0.417
-    dt0_InAs = 0.276*0.001
-    b0_InAs = 93
-    #We don't include the effect of Moss Burstein shift for p-type since high VB density of states
-    #dont include bandgap narrowing, since the states would not contribute to optical transistions
-    E_T = E0_InAs - dt0_InAs*T^2/(T+b0_InAs)
-    return E_T #- delta_Eg_InAs      #changed from + to - since it is bandgap narrowing 
-end
-precompile(E0_T_InAs_ptype, (Float64,Float64))
 
 
 @inline function epsFCL_ptype(omega,mstar,gamma,N_base)

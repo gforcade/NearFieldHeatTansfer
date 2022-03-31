@@ -1,7 +1,7 @@
 __precompile__()
 module eps_InAs_ntype_v2
 using QuadGK,Cubature
-export OmegatoeV, m_star, Gamma_ntype, E0_T_InAs,epsFCL,epsIB,epsIBEV,fermi
+export OmegatoeV, m_star, Gamma_ntype, E0_T_InAs,epsFCL,epsIB,epsIBEV,fermi,np_factor
 #from integration import Integrate
 #from scipy.integrate import quad
  #but I can't use QuadGk for larger values of eV, can only functionine function Integrate, tested E = 0.0037eV, get same eps of 10.240628772514803 + 0.03160036047883907im
@@ -29,15 +29,26 @@ const C_InAs = 0.0# 57.9*10^(-12)
 end
 precompile(OmegatoeV,(Float64,))
 
-@inline function m_star(n) # change m_e according to MB shift
-    P_square = 11.9   #eV
-    E_g= 0.416 #eV 
-    term = 8.0*P_square/eV*hbar^2*(3.0*pi^2*n)^(2/3)/(3.0*m_e*E_g^2) 
-    return (1.0+(4.0*P_square/(3.0*E_g))*(1.0+term)^(-1/2))^(-1)*m_0
-end 
-precompile(m_star, (Float64,))
 
-@inline function Gamma_ntype(N_Base,T)
+@inline function m_star(n,Eg,m0_star,del) # change m_e according to MB shift
+    #n in m-3 , Eg in eV, m0_star is the effective mass without doping in m0 units, del is the valence band split-off energy in eV
+    term = 2.0 * np_factor(del,Eg,m0_star) * (3.0 * pi^2.0 *n)^(2.0/3.0) * hbar_eV^2.0 * e / (2.0 * m0_star ) * 0.6
+    return m0_star / (1.0 - term)  # e to get rid of units in the second term
+end 
+precompile(m_star, (Float64,Float64,Float64,Float64,))
+
+
+@inline function np_factor(del,Eg,m0_star)
+    #nonparabolicity factor up to k^6. Raymond et al. 1979.
+    # take del, Eg in eV.  m0_star in m0 units.
+    x = del / Eg
+    return (1.0 - m0_star/m_0)^2.0 * (1.0 + x + 0.25*x^2.0)/(1.0 + 4.0/3.0*x + 4.0/9.0*x^2.0) / Eg  
+end
+precompile(np_factor, (Float64,Float64,Float64))
+
+
+
+@inline function Gamma_ntype(N_Base,T,mstar)
     umin = 1000.0
     umax = 34000.0
     Nref = 1.1*10^18*10^6 #in m^(-3) since N_base in m^(-3)
@@ -45,9 +56,9 @@ precompile(m_star, (Float64,))
     t1 = 1.57
     t2 = 3.0
     mu_franc =  umin + (umax*(300.0/T)^t1-umin)/(1+(N_Base/(Nref*(T/300.0)^t2))^phi)#from Francoeur 
-    return e/(m_star(N_Base)*mu_franc*10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
+    return e/(mstar*mu_franc/10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
 end
-precompile(Gamma_ntype, (Float64,Float64))
+precompile(Gamma_ntype, (Float64,Float64,Float64))
 
 @inline function E0_T_InAs(N0,T) 
     #bandgap narrowing #Gavin: Got rid of bandgap narrowing and moss burstein shift to have better fit with experimental data
@@ -61,7 +72,7 @@ precompile(E0_T_InAs, (Float64,Float64))
 
 
 
-function fermi(t,phi,N)
+@inline function fermi(t,phi,N)
     #calculates the n-type fermi energy for nonparabolic conduction band, with alpha = 1/E_0
     #integration function
     func(x) = x^(1/2)*(1.0 + x/phi)^(1/2)*(1.0 + 2.0*x/phi)/(1.0 + exp(x - t[1]))

@@ -54,13 +54,24 @@ precompile(m_star_ptype, (Float64,Float64))
 
 
     mu_franc =  umin + (umax*(300.0/T)^t1-umin)/(1+(N_Base/(Nref*(T/300.0)^t2))^phi)#from Francoeur 
-    return e/(m_star*mu_franc*10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
+    
+    #this is to match with Mitapally
+    if N_Base == 1.0e24
+        return e/(0.0831*2096.0/1e4)
+    else
+        return e/(m_star*mu_franc/10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
+    end
+
+    #not matching Mitapally
+    #return e/(m_star*mu_franc/10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
 end
 precompile(Gamma_ntype_InP, (Float64,Float64,Float64))
 
 
 @inline function Gamma_ptype_InP(N_Base,T,m_star)
     
+    """
+    #not matching Mitapally
     #InP: Sotoodeh 2000
     umin = 10.0
     umax = 170.0
@@ -68,9 +79,19 @@ precompile(Gamma_ntype_InP, (Float64,Float64,Float64))
     phi = 0.62
     t1 = 2.0
     t2 = 2.0
+    """
+    
+    #InP: matching Mitapally 2021
+    umin = 0.0
+    umax = 150.0
+    Nref = 2.0*10^17*10^6 #in m^(-3) since N_base in m^(-3)
+    phi = 0.5
+    t1 = 2.0
+    t2 = 2.0
+    
 
     mu_franc =  umin + (umax*(300.0/T)^t1-umin)/(1+(N_Base/(Nref*(T/300.0)^t2))^phi)#from Francoeur 
-    return e/(m_star*mu_franc*10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
+    return e/(m_star*mu_franc/10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
 end
 precompile(Gamma_ptype_InP, (Float64,Float64,Float64))
 
@@ -107,15 +128,12 @@ end
     mstar_ntype = 0.079*m_0 #effective masses # Meghan PDF
     mstar_ptype_lh = 0.11*m_0 # Meghan PDF
 	mstar_ptype_hh = 0.69*m_0 # Meghan PDF
-    mstar_ptype = m_star_ptype(mstar_ptype_hh,mstar_ptype_lh)
+    #mstar_ptype = m_star_ptype(mstar_ptype_hh,mstar_ptype_lh)  ####not matching Mitapally
+    mstar_ptype = 0.6*m_0 #from Mitapally
     gamma_ntype = Gamma_ntype_InP(N0,T,mstar_ntype)
     gamma_ptype = Gamma_ptype_InP(N0,T,mstar_ptype)
     epsinf = eps_inf_InP
     P = P_InP
-    Nc = 2.0*(3.0*E0*kb*T/(8.0*pi*P^2.0))^(3.0/2.0) 
-    #calculating the fermi energy
-	#res = optimize(t -> fermi(t,E0/(kb*T),pi^(1/2)/2*N0/(Nc*10.0^6)),[E0],Newton()) #Nc from cm-3 to m-3
-	#F = Optim.minimizer(res)[1]*kb*T + E0 #fermi energy relative to the valence band
     F = 0.0
     return InPDsc(eps1_f,eps2_f,N0,T,E0,gamma_ntype ,gamma_ptype ,mstar_ntype ,mstar_ptype,mstar_ptype_lh,mstar_ptype_hh,epsinf,P,F)
 end
@@ -176,7 +194,7 @@ precompile(eps_InP_imag,(Float64,InPDsc))
     o_p_square=N_base*e^2/(eps_0*eps_inf*mstar) #s^(-2)
     
     #first term is free carrier effect, the rest are the lattice effects, weiighted by the atom fraction
-    return eps_inf*(- o_p_square/(omega*(omega+ im*gamma)) + (o_LO_InP^2-o_TO_InP^2)/(o_TO_InP^2-omega^2-im*omega*g_InP))
+    return eps_inf*(- o_p_square/(omega*(omega+ im*gamma))  + (o_LO_InP^2-o_TO_InP^2)/(o_TO_InP^2-omega^2-im*omega*g_InP))
 end
 precompile(epsFCL_InP,(Float64,Float64,Float64,Float64))
 end

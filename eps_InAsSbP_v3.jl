@@ -211,7 +211,7 @@ precompile(m_star_ptype, (Float64,Float64))
     t2 = x*t2_InAs + (1-x)*t2_InSbP
 
     mu_franc =  umin + (umax*(300.0/T)^t1-umin)/(1+(N_Base/(Nref*(T/300.0)^t2))^phi)#from Francoeur 
-    return e/(m_star*mu_franc*10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
+    return e/(m_star*mu_franc/10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
 end
 precompile(Gamma_ntype_InAsSbP, (Float64,Float64,Float64,Float64,Float64))
 
@@ -245,7 +245,7 @@ precompile(Gamma_ntype_InAsSbP, (Float64,Float64,Float64,Float64,Float64))
     t2 = x*t2_InAs + (1-x)*t2_InSbP
 
     mu_franc =  umin + (umax*(300.0/T)^t1-umin)/(1+(N_Base/(Nref*(T/300.0)^t2))^phi)#from Francoeur 
-    return e/(m_star*mu_franc*10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
+    return e/(m_star*mu_franc/10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
 end
 precompile(Gamma_ptype_InAsSbP, (Float64,Float64,Float64,Float64,Float64))
 
@@ -300,6 +300,7 @@ end
     Eg= func_Q2(x,y,Eg_T_InAs,Eg_T_InSb,Eg_InP)
     alpha_lc = func_Q2(x,y,alpha_lc_InAs,alpha_lc_InSb,alpha_lc_InP)
     =#
+    del = 0.39*x + 0.166*(1 - x) + 0.75*x*(1-x)
     E0 =  0.512 + 0.03*x - 0.188*x^2  #only good for InAsSbP lattice matched to InAs #func_Q2(x,y,E0_T_InAs,E0_T_InSb,E0_T_InP)    
     mstar_ntype = func_Q2(x,y,0.024,0.013,0.07927)*m_0 #effective masses from Adachi, "Properties of Semiconductor alloys: ...," 2009
     mstar_ptype_lh = func_Q2(x,y,0.026,0.014,0.11)*m_0
@@ -310,8 +311,8 @@ end
     epsinf = func_Q2(x,y,eps_inf_InAs,eps_inf_InSb,eps_inf_InP)
     P = func_Q2(x,y,P_InAs,P_InSb,P_InP)
     Nc = 2.0*(3.0*E0*kb*T/(8.0*pi*P^2.0))^(3.0/2.0) #func_Q2(x,y,Nc_InAs,Nc_InSb,Nc_InP)
-    #calculating the fermi energy
-	res = optimize(t -> fermi(t,E0/(kb*T),pi^(1/2)/2*N0/(Nc*10.0^6)),[E0],Newton()) #Nc from cm-3 to m-3
+    #calculating the fermi energy 1.0/(kb*T*np_factor(del,E0_T_InAs_value,mstar)
+	res = optimize(t -> fermi(t,1.0/(kb*T*np_factor(del,E0,mstar_ntype)),pi^(1/2)/2*N0/(Nc*10.0^6)),[E0],Newton()) #Nc from cm-3 to m-3
 	F = Optim.minimizer(res)[1]*kb*T + E0 #fermi energy relative to the valence band
     return InAsSbPDsc(x,y,N0,T,E0,gamma_ntype ,gamma_ptype ,mstar_ntype ,mstar_ptype,mstar_ptype_lh,mstar_ptype_hh,epsinf,P,F)
 end
