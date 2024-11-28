@@ -2,7 +2,7 @@
 # new structure
 
 #directory to code
-savFileDir = pwd()#"/home/gforc034/hs_Sean_02102021_v3"
+savFileDir = "/home/gforc034/hs_Sean_02102021_v3"
 
 push!(LOAD_PATH,savFileDir)
 using Base.Threads, ProgressMeter, Roots, Base, Printf

@@ -2,6 +2,8 @@
 
 push!(LOAD_PATH,pwd())
 
+
+
         
 using Base.Threads, ProgressMeter, LaTeXStrings, Roots,Dates
 using FilmDataStructures, FilmUtilities, ResponseModels, OttawaSlabCell_v3
@@ -31,17 +33,20 @@ function heatLayersFunc(var1::Float64,var2::Float64)
     d_firstgap = 0.0
     d_Rad = 30.0
     d_gap = 0.1
-    d_prot= 2.0
-    d_InAs_total = 10.0
-    d_InAsSbP_base = 2.0
-    d_InAs_sub = 200.0
+    d_prot= 1.12
+    d_InAs_total = 0.808
+    d_InAsSbP_base = 0.02
+    d_bsf = 0.02
+    d_InAs_sub = 0.0
     Si_ndoping = 1.0e15 *1.0e6 #25
-    prot_ndoping = -1.0e18 *1.0e6
+    prot_ndoping = -8.5e17 *1.0e6
     ndoping_InAs = 6.0e14 *1.0e6
-    pdoping_InAs = 1.0e18 *1.0e6  #highest is best (proven)
+    pdoping_InAs = 2.3e16 *1.0e6  #highest is best (proven)
+    doping_bsf = 1e19 *1e6
     substrate_dop = 2.0e18 *1.0e6
-    prot_quat_x = 1.0
-    quat_x = 1.0  #smallest is best because of higher bandgap
+    prot_quat_x = 0.6
+    quat_x = 0.4  
+    bsf_x = 1.0
     #output folder
     fName = "Results for Opt Article_v2\\"
 
@@ -59,6 +64,11 @@ function heatLayersFunc(var1::Float64,var2::Float64)
     divProtCell = 1
     divNcell = 1
     divPcell = 1 
+    if d_bsf != 0.0
+        divBSFCell = 1
+    else
+        divBSFCell = 0
+    end
     if d_InAs_sub == 0.0 || d_InAs_sub > 5000.0
         divSubCell = 0
         mboxSub = 0.0
@@ -71,18 +81,18 @@ function heatLayersFunc(var1::Float64,var2::Float64)
     mboxN = 0.0
     mboxP = 0.0
     #number of layers in the simulations 
-    numLayers = divNcell + divPcell + divProtCell + divSubCell
+    numLayers = divNcell + divPcell + divProtCell + divSubCell + divBSFCell
 
     # building simulations structure 
-    (lVar, lPairs) = uOttawaSlabs_v3(Radiator_T, 300.0, divProtCell, divNcell, divPcell, divSubCell, d_firstgap, d_Rad, d_gap, d_prot, d_InAs_total, d_InAsSbP_base, d_InAs_sub, Si_ndoping, prot_ndoping, ndoping_InAs, pdoping_InAs, substrate_dop, quat_x, prot_quat_x, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub,0)
+    (lVar, lPairs) = uOttawaSlabs_v3(Radiator_T, 300.0, divProtCell, divNcell, divPcell, divBSFCell, divSubCell, d_firstgap, d_Rad, d_gap, d_prot, d_InAs_total, d_InAsSbP_base, d_bsf, d_InAs_sub, Si_ndoping, prot_ndoping, ndoping_InAs, pdoping_InAs, doping_bsf, substrate_dop, quat_x, prot_quat_x, bsf_x, mboxProt, mboxN, mboxP, mboxSub, xMinProt, xMinN, xMinP, xMinSub,0)
     # change div subcell to write it in file if thick substrate is used
     if d_InAs_sub > 30.0
         divSubCell = 1
     end
-    write(fileStream,"Rad"*string(trunc(Int,round(Radiator_T)))*"fstGap"*string(trunc(Int,round(d_firstgap*1000)))*"Si"*string(trunc(Int,round(d_Rad*1000)))*"Dop"*string(round(Si_ndoping/1000000,sigdigits=1))*"Gap"*string(trunc(Int,round(d_gap*1000)))*"fsf"*string(trunc(Int,round(d_prot*1000)))*"As"*string(round(prot_quat_x,sigdigits=1))*"Dop"*string(round(prot_ndoping/1000000,sigdigits=1))*"InAs"*string(trunc(Int,round(d_InAs_total*1000)))*"Dop"*string(round(ndoping_InAs/1000000,sigdigits=1))*"Q"*string(trunc(Int,round(d_InAsSbP_base*1000)))*"As"*string(round(quat_x,sigdigits=1))*"Dop"*string(round(pdoping_InAs/1000000,sigdigits=1))*"Sub"*string(trunc(Int,round(d_InAs_sub*1000)))*"Dop"*string(round(substrate_dop/1000000,sigdigits=1))*" \n")
+    write(fileStream,"Rad"*string(trunc(Int,round(Radiator_T)))*"fstGap"*string(trunc(Int,round(d_firstgap*1000)))*"Si"*string(trunc(Int,round(d_Rad*1000)))*"Dop"*string(round(Si_ndoping/1000000,sigdigits=1))*"Gap"*string(trunc(Int,round(d_gap*1000)))*"fsf"*string(trunc(Int,round(d_prot*1000)))*"As"*string(round(prot_quat_x,sigdigits=1))*"Dop"*string(round(prot_ndoping/1000000,sigdigits=1))*"InAs"*string(trunc(Int,round(d_InAs_total*1000)))*"Dop"*string(round(ndoping_InAs/1000000,sigdigits=1))*"Q"*string(trunc(Int,round(d_InAsSbP_base*1000)))*"As"*string(round(quat_x,sigdigits=1))*"Dop"*string(round(pdoping_InAs/1000000,sigdigits=1))*"BSF"*string(trunc(Int,round(d_bsf*1000)))*"As"*string(round(bsf_x,sigdigits=1))*"Dop"*string(round(doping_bsf/1000000,sigdigits=1))*"Sub"*string(trunc(Int,round(d_InAs_sub*1000)))*"Dop"*string(round(substrate_dop/1000000,sigdigits=1))*" \n")
     write(fileStream, "Julia initialized with "*string(nthreads())*" threads.\n\n")
     write(fileStream,string(xMinN)*" "*string(xMinP)*" "*string(xMinSub)*" "*string(xMinProt)*" xMin for mbox meshing. InAs, Q, Substrate, Prot respectively. \n")
-    write(fileStream,string(divProtCell)*" "*string(divNcell)*" "*string(divPcell)*" "*string(divSubCell)*" of slices for Prot, InAs, Q, and Substrate respectively.\n")
+    write(fileStream,string(divProtCell)*" "*string(divNcell)*" "*string(divPcell)*" "*string(divBSFCell)*" "*string(divSubCell)*" of slices for Prot, InAs, Q, BSF, and Substrate respectively.\n")
     ##  energy interval
     enrN = 200
     enrRngLims = LinRange(0.01, 1.0,enrN)

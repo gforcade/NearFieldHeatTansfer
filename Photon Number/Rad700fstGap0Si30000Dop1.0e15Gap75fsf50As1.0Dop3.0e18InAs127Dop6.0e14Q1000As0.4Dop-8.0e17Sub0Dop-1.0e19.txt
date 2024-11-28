@@ -1,0 +1,27 @@
+Julia initialized with 3 threads.
+
+Execution:
+Layer structure constructed in 0.114369684 s.
+Generated excitation profile computed 24.207535138 s.
+0.0 0.0 0.0 0.0 xMin for mbox meshing. InAs, Q, Substrate, Prot respectively. 
+4 10 0 3 of slices for InAs, Q, and Substrate, Prot respectively.
+
+Depth (microns)	 Excitation Density Rate (cm-2 microns-1 s-1)
+
+1.777e18 
+1.752e18 
+1.728e18 
+2.872e19 
+2.938e19 
+2.976e19 
+2.987e19 
+2.197e18 
+2.068e18 
+2.023e18 
+1.856e18 
+1.566e18 
+1.568e18 
+1.959e18 
+1.895e18 
+1.09e18 
+8.305e17 

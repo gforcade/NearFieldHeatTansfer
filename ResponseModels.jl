@@ -147,7 +147,7 @@ precompile(eps_InAs_struct,(Float64,Float64))
      omega = eVtoOmega(E_photon)
      #o_angular = 5.38*10^14   #hbar*5.38*10^14/eV = 0.35eV
     #if(E_photon>InAsDsc_struct.E0_T_InAs_value)  #made just InAsDsc_struct be passed vs all the variables
-	return epsIB(omega,InAsDsc_struct.N0,InAsDsc_struct.T,InAsDsc_struct.E0_T_InAs_value,InAsDsc_struct.eps_inf,InAsDsc_struct.P,InAsDsc_struct.mstar_ptype_hh,InAsDsc_struct.mstar_ptype_lh,InAsDsc_struct.F,0.0) + epsFCL(omega,InAsDsc_struct.mstar,InAsDsc_struct.gamma_ntype,InAsDsc_struct.N0) - InAsDsc_struct.eps_inf #eps_inf to avoid double counting
+	return epsIB(omega,InAsDsc_struct.N0,InAsDsc_struct.T,InAsDsc_struct.E0_T_InAs_value,InAsDsc_struct.eps_inf,InAsDsc_struct.P,InAsDsc_struct.mstar_ptype_hh,InAsDsc_struct.mstar_ptype_lh,InAsDsc_struct.F,0.0) + epsFCL(omega,InAsDsc_struct.mstar,InAsDsc_struct.gamma_ntype,InAsDsc_struct.N0,InAsDsc_struct.F-InAsDsc_struct.E0_T_InAs_value,InAsDsc_struct.E0_T_InAs_value,InAsDsc_struct.T,0) - InAsDsc_struct.eps_inf #eps_inf to avoid double counting
 	#else
     #   return epsFCL(omega,InAsDsc_struct.mstar,InAsDsc_struct.gamma_ntype,InAsDsc_struct.N0)
     #end
@@ -159,7 +159,7 @@ precompile(eps_InAs_ntype_v2,(Float64,InAsDsc))
 	omega = eVtoOmega(E_photon)
 	#o_angular = 5.38*10^14   #hbar*5.38*10^14/eV = 0.35eV
 	#if(E_photon>InAsDsc_struct.E0_T_InAs_value_ptype)
-	return epsIB(omega,InAsDsc_struct.N0,InAsDsc_struct.T,InAsDsc_struct.E0_T_InAs_value_ptype,InAsDsc_struct.eps_inf,InAsDsc_struct.P,InAsDsc_struct.mstar_ptype_hh,InAsDsc_struct.mstar_ptype_lh,InAsDsc_struct.F,1.0) + epsFCL(omega,InAsDsc_struct.mstar_ptype,InAsDsc_struct.gamma_ptype,InAsDsc_struct.N0) - InAsDsc_struct.eps_inf #eps_inf to avoid double counting
+	return epsIB(omega,InAsDsc_struct.N0,InAsDsc_struct.T,InAsDsc_struct.E0_T_InAs_value_ptype,InAsDsc_struct.eps_inf,InAsDsc_struct.P,InAsDsc_struct.mstar_ptype_hh,InAsDsc_struct.mstar_ptype_lh,InAsDsc_struct.F,1.0) + epsFCL(omega,InAsDsc_struct.mstar_ptype,InAsDsc_struct.gamma_ptype,InAsDsc_struct.N0,InAsDsc_struct.F-InAsDsc_struct.E0_T_InAs_value,InAsDsc_struct.E0_T_InAs_value,InAsDsc_struct.T,1) - InAsDsc_struct.eps_inf #eps_inf to avoid double counting
 	#else
 	#   return epsFCL_ptype(omega,InAsDsc_struct.mstar_ptype,InAsDsc_struct.gamma_ptype,InAsDsc_struct.N0)
     #end

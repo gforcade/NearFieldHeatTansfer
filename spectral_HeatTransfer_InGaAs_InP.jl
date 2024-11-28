@@ -30,7 +30,7 @@ function heatLayersFunc(var1::Float64,var2::Float64)
     Radiator_T = 1270.0
     d_firstgap = 0.01
     d_Rad = 60.0
-    d_gap = 0.1
+    d_gap = 7.0
     d_prot= 0.2
     d_InAs_total = 1.0
     d_InAsSbP_base = 0.1
@@ -51,7 +51,7 @@ function heatLayersFunc(var1::Float64,var2::Float64)
     ####simulations for total energy transfer
     # Open output file.
     fName = "..\\Simulation Results\\"*fName
-    fName = fName*"Spectral Heat Transfer/"*string(Dates.format(now(),"yyyy_mm_dd_H_M"))*".txt"
+    fName = fName*"Spectral Heat Transfer_v2/"*string(Dates.format(now(),"yyyy_mm_dd_H_M"))*".txt"
     fileStream = open(fName,"w")
     xMinProt = 0.0
     xMinN = 0.0
@@ -86,7 +86,7 @@ function heatLayersFunc(var1::Float64,var2::Float64)
     write(fileStream,string(divProtCell)*" "*string(divNcell)*" "*string(divPcell)*" "*string(divSubCell)*" of slices for Prot, InAs, Q, and Substrate respectively.\n")
     ##  energy interval
     enrN = 300
-    enrRngLims = LinRange(0.01, 1.5,enrN)
+    enrRngLims = LinRange(0.01, 1.5,enrN) #0.01,1.5
 
     stats = @time for i = 1:enrN-1
 

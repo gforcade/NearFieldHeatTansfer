@@ -25,7 +25,7 @@ end
 precompile(m_star_ptype, (Float64,Float64))
 
 @inline function Gamma_ptype(N_Base,T,m_star_ptype)
-    umin =20.0
+    umin = 6.61e-2#20.0
     umax = 530.0
     Nref = 1.1*10^17*10^6 #in m^(-3) since N_base in m^(-3)
     phi = 0.46

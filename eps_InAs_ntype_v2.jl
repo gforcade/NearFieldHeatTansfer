@@ -1,7 +1,7 @@
 __precompile__()
 module eps_InAs_ntype_v2
 using QuadGK,Cubature
-export OmegatoeV, m_star, Gamma_ntype, E0_T_InAs,epsFCL,epsIB,epsIBEV,fermi,np_factor
+export OmegatoeV, m_star, Gamma_ntype, E0_T_InAs,epsFCL,epsIB,epsIBEV,fermi,np_factor, eps_FC_I_calc, eps_imag_FCA_calc, eps_FC_I_baltz_calc
 #from integration import Integrate
 #from scipy.integrate import quad
  #but I can't use QuadGk for larger values of eV, can only functionine function Integrate, tested E = 0.0037eV, get same eps of 10.240628772514803 + 0.03160036047883907im
@@ -30,12 +30,17 @@ end
 precompile(OmegatoeV,(Float64,))
 
 
-@inline function m_star(n,Eg,m0_star,del) # change m_e according to MB shift
+@inline function m_star(n,Eg) # change m_e according to MB shift
     #n in m-3 , Eg in eV, m0_star is the effective mass without doping in m0 units, del is the valence band split-off energy in eV
-    term = 2.0 * np_factor(del,Eg,m0_star) * (3.0 * pi^2.0 *n)^(2.0/3.0) * hbar_eV^2.0 * e / (2.0 * m0_star ) * 0.6
-    return m0_star / (1.0 - term)  # e to get rid of units in the second term
+    ##Vurgaftmann 2001. Bad at large doping levels (goes negative)
+    #term = 2.0 * np_factor(del,Eg,m0_star) * (3.0 * pi^2.0 *n)^(2.0/3.0) * hbar_eV^2.0 * e / (2.0 * m0_star ) * 0.6
+    #return m0_star / (1.0 - term)  # e to get rid of units in the second term
+    # Li et al. "Infrared reflection and transmission of undoped and Si-doped InAs grown on GaAs by MBE," 1993.
+    P_square = 11.9   #eV
+    term = 8.0*P_square/eV*hbar^2*(3.0*pi^2*n)^(2/3)/(3.0*m_e*Eg^2) 
+    return (1.0+(4.0*P_square/(3.0*Eg))*(1.0+term)^(-1/2))^(-1)
 end 
-precompile(m_star, (Float64,Float64,Float64,Float64,))
+precompile(m_star, (Float64,Float64,))
 
 
 @inline function np_factor(del,Eg,m0_star)
@@ -49,12 +54,22 @@ precompile(np_factor, (Float64,Float64,Float64))
 
 
 @inline function Gamma_ntype(N_Base,T,mstar)
+    ##Our own fit 
+    umin = 20.0#0.3
+    umax = 30636.0
+    Nref = 3.56*10^17*10^6 #in m^(-3) since N_base in m^(-3)
+    phi = 0.68
+    t1 = 1.601#1.57
+    t2 = 3.0
+    """
+    ##sotoodeh 2000 
     umin = 1000.0
     umax = 34000.0
     Nref = 1.1*10^18*10^6 #in m^(-3) since N_base in m^(-3)
     phi = 0.32
     t1 = 1.57
     t2 = 3.0
+    """
     mu_franc =  umin + (umax*(300.0/T)^t1-umin)/(1+(N_Base/(Nref*(T/300.0)^t2))^phi)#from Francoeur 
     return e/(mstar*mu_franc/10000.0) #s^(-1) change mu from cm^(-2) to m^(-2) 
 end
@@ -107,17 +122,90 @@ precompile(BM,(Float64,Float64,Float64,Float64,Float64))
 
 
 
-@inline function epsFCL(omega,mstar,gamma,N_base)
+@inline function epsFCL(omega,mstar,gamma,N_base,F,Eg,T,p)
     #InAs parameters
-    eps_inf_InAs = 11.6 
+    eps_inf_InAs = 12.25 #11.6 
     g = 9.23*10.0^11  #s^(-1), gamma #from Adachi, "Optical Constants of...", 1999
     o_TO = 4.14*10.0^(13) #s^(-1) #0.0271 [eV] #from Adachi, "Properties of semiconductor and their alloys...", 2009
     o_LO = 4.55*10.0^(13) #0.0301 [eV]
     o_p_square=N_base*e^2/(eps_0*eps_inf_InAs*mstar) #s^(-2)
-    return eps_inf_InAs*(1.0-o_p_square/(omega*(omega+ im*gamma))+(o_LO^2-o_TO^2)/(o_TO^2-omega^2-im*omega*g))
+    eps_L = eps_inf_InAs*(o_LO^2-o_TO^2)/(o_TO^2-omega^2-im*omega*g)
+    eps_Drude = eps_inf_InAs*(-o_p_square/(omega*(omega+ im*gamma)))
+    if(F < kb*T || p == 1) #for th low doping case
+        eps_FC = eps_Drude
+    else
+        eps_FC_R=eps_Drude.re #computing the real part of the permittivity
+		eps_FC_I=eps_FC_I_calc(omega,F,eps_inf_InAs,eps_0,e,N_base,hbar_eV,m_0,o_p_square,Eg,eps_Drude,gamma) #computing the imaginary part of the permittivity
+		eps_FC=eps_FC_R+im*eps_FC_I
+    end
+    return eps_inf_InAs + eps_FC + eps_L
+    #return eps_inf_InAs*(1.0-o_p_square/(omega*(omega+ im*gamma))+(o_LO^2-o_TO^2)/(o_TO^2-omega^2-im*omega*g))
 end
-precompile(epsFCL,(Float64,Float64,Float64,Float64))
+precompile(epsFCL,(Float64,Float64,Float64,Float64,Float64,Float64,Float64,Int))
 
+
+## add-ons from Baltz paper. This is the calculation of the imaginary part of the permittivity at high doping taken from Baltz 1972 https://doi.org/10.1002/pssb.2220510209
+#this model computes the imaginary part of the permittivity at high doping by combining the baltz and drude model depending on the region
+@inline function eps_FC_I_calc(w,E_F,eps_inf,epsilon0,e,N,hbar,m0,wp_square,Eg_0_T,eps_Drude,gamma) 
+	
+    #splitting the array of the frequency in 2 at the plasmonic frequency
+	if(w>=sqrt(wp_square))
+        #extra = eps_inf*(-wp_square/(sqrt(wp_square)*(sqrt(wp_square)+ im*gamma)))
+		stuff = eps_FC_I_baltz_calc(w,E_F,eps_inf,epsilon0,e,N,hbar,m0,Eg_0_T) #* extra.im / eps_FC_I_baltz_calc(sqrt(wp_square),E_F,eps_inf,epsilon0,e,N,hbar,m0,Eg_0_T)
+	else #in the case where the frequency is never larger than the plasma frequency
+		stuff = eps_Drude.im
+    end
+	return stuff
+end
+precompile(eps_FC_I_calc,(Float64,Float64,Float64,Float64,Float64,Float64,Float64,Float64,Float64,Float64,Float64,Float64))
+
+
+#this is the calculation of the imaginary part of the permittivity at high doping taken from Baltz 1972 https://doi.org/10.1002/pssb.2220510209
+@inline function eps_FC_I_baltz_calc(w,E_F,eps_inf,epsilon0,e,N,hbar,m0,Eg_0_T) 
+
+	#some varibales
+	Z=1
+
+	#computing q_TF
+	q_TF=sqrt(3.0*N*e^2.0/(2.0*epsilon0*eps_inf*E_F*e)) #[1/m] multiplied bottom by e
+	#computing the fermi wavevector
+	k_F=sqrt(2.0*m0*E_F)/hbar_eV  #[kg^1/2 eV^-1/2 s-1]
+	#computing the number of impurities with charge Ze 
+	R=Z*N
+	#computing gamma
+	gamma=R*(Z*e^2.0/(epsilon0*eps_inf))^2.0 #[kg^2m^3/s^4]  #we removed K_F^4 here and in the A expression since they cancel each other
+	#compute the A factor
+	A=1.0/(12.0*pi^3.0)*e^2.0*gamma/(epsilon0*E_F^3.0*e^3.0)  #[unitless] #we removed K_F^4 here and in the gamma expression since they cancel each other
+	#computing zeta
+	zeta=hbar_eV*w/E_F  #[unitless]
+	#computing X_TF
+	X_TF=(q_TF/k_F)^2.0*e  #[unitless] multiplied by e to make unitless
+	
+	#computing the imaginary part of the permittivity due to FCA
+	return eps_imag_FCA_calc(A,zeta,X_TF)
+
+end
+precompile(eps_FC_I_baltz_calc,(Float64,Float64,Float64,Float64,Float64,Float64,Float64,Float64,Float64))
+
+
+ #this is the implementation of equation 4.4a in Baltz 1972 https://doi.org/10.1002/pssb.2220510209
+@inline function eps_imag_FCA_calc(A,zeta,X_TF)
+
+    eps_imag_FCA_integrand_calc(X) = 0.5*log(((sqrt(X+zeta)+sqrt(X))^2.0+X_TF)/((sqrt(X+zeta)-sqrt(X))^2.0+X_TF)) - (2.0*X_TF*sqrt(X*(X+zeta)))/(((sqrt(X+zeta)+sqrt(X))^2.0+X_TF)*((sqrt(X+zeta)-sqrt(X))^2.0+X_TF))
+	
+
+    #computing the integral
+    if((1.0-zeta)<0.0)
+        return A*(zeta)^(-4.0)*quadgk(eps_imag_FCA_integrand_calc, 0.0, 1.0, rtol=1e-3)[1]
+    else
+        return A*(zeta)^(-4.0)*quadgk(eps_imag_FCA_integrand_calc, (1.0-zeta), 1.0, rtol=1e-3)[1]
+	end
+end
+precompile(eps_imag_FCA_calc,(Float64,Float64,Float64))
+
+
+
+## end of baltz paper add-on
 
 @inline function alpha_lh(omega,E0_T_InAs_value,eps_inf,P)
     #function for light hole band absorption #Anderson 1980 Eq. 14

@@ -138,7 +138,7 @@ G_Eg_InP=  0.8902957174564856
 
 
 #below are the new important parameters, everything else is not used
-eps_inf_InAs = 11.6
+eps_inf_InAs = 12.25 #11.6
 eps_inf_InSb = 15.3
 eps_inf_InP = 9.9
 
@@ -147,6 +147,18 @@ P_InAs =  9.05e-8  ##8.58e-8  ##Paskov, "Refractive indices of InSb, InAs, GaSb,
 P_InSb =  9.42e-8  ##8.9e-8
 P_InP  =  8.88e-8     
 
+
+@inline function m_star_InAs(n,Eg) # change m_e according to MB shift
+    #n in m-3 , Eg in eV, m0_star is the effective mass without doping in m0 units, del is the valence band split-off energy in eV
+    ##Vurgaftmann 2001. Bad at large doping levels (goes negative)
+    #term = 2.0 * np_factor(del,Eg,m0_star) * (3.0 * pi^2.0 *n)^(2.0/3.0) * hbar_eV^2.0 * e / (2.0 * m0_star ) * 0.6
+    #return m0_star / (1.0 - term)  # e to get rid of units in the second term
+    # Li et al. "Infrared reflection and transmission of undoped and Si-doped InAs grown on GaAs by MBE," 1993.
+    P_square = 11.9   #eV
+    term = 8.0*P_square/eV*hbar^2*(3.0*pi^2*n)^(2/3)/(3.0*m_e*Eg^2) 
+    return (1.0+(4.0*P_square/(3.0*Eg))*(1.0+term)^(-1/2))^(-1)
+end 
+precompile(m_star, (Float64,Float64,))
 
 
 
@@ -182,6 +194,16 @@ precompile(m_star_ptype, (Float64,Float64))
 @inline function Gamma_ntype_InAsSbP(x,y,N_Base,T,m_star)
     
     #InAs 
+    ##data from fit
+    #me_InAs = 0.024*m_0 #Adachi "Properties of Semiconductors alloys," 2009
+    umin_InAs = 20.0 #0.3
+    umax_InAs = 30636.0
+    Nref_InAs = 3.56*10^17*10^6 #in m^(-3) since N_base in m^(-3)
+    phi_InAs = 0.68
+    t1_InAs = 1.601#1.57
+    t2_InAs = 3.0
+    """
+    ##sotoodeh 2000
     #me_InAs = 0.024*m_0 #Adachi "Properties of Semiconductors alloys," 2009
     umin_InAs = 1000.0
     umax_InAs = 34000.0
@@ -189,6 +211,7 @@ precompile(m_star_ptype, (Float64,Float64))
     phi_InAs = 0.32
     t1_InAs = 1.57
     t2_InAs = 3.0
+    """
 
     #InSbP (same as Sentaurus)
     #me_InSbP = 0.063*m_0 #Adachi "Properties of Semiconductors alloys," 2009
@@ -219,7 +242,7 @@ precompile(Gamma_ntype_InAsSbP, (Float64,Float64,Float64,Float64,Float64))
 @inline function Gamma_ptype_InAsSbP(x,y,N_Base,T,m_star)
     
     #InAs 
-    umin_InAs = 20.0
+    umin_InAs = 6.61e-2
     umax_InAs = 530.0
     Nref_InAs = 1.1*10^17*10^6 #in m^(-3) since N_base in m^(-3)
     phi_InAs = 0.46
@@ -302,9 +325,10 @@ end
     =#
     del = 0.39*x + 0.166*(1 - x) + 0.75*x*(1-x)
     E0 =  0.512 + 0.03*x - 0.188*x^2  #only good for InAsSbP lattice matched to InAs #func_Q2(x,y,E0_T_InAs,E0_T_InSb,E0_T_InP)    
-    mstar_ntype = func_Q2(x,y,0.024,0.013,0.07927)*m_0 #effective masses from Adachi, "Properties of Semiconductor alloys: ...," 2009
+    mstar_ntype = func_Q2(x,y,0.024,0.013,0.07927) #effective masses from Adachi, "Properties of Semiconductor alloys: ...," 2009
+    mstar_ntype = (mstar_ntype + m_star_InAs(N0,E0) - 0.022)*m_0   #makes the effective mass doping dependent
     mstar_ptype_lh = func_Q2(x,y,0.026,0.014,0.11)*m_0
-	mstar_ptype_hh = func_Q2(x,y,0.36,0.38,0.69)*m_0
+	mstar_ptype_hh = func_Q2(x,y,0.47,0.38,0.69)*m_0 #func_Q2(x,y,0.36,0.38,0.69)*m_0
     mstar_ptype = m_star_ptype(mstar_ptype_hh,mstar_ptype_lh)
     gamma_ntype = Gamma_ntype_InAsSbP(x,y,N0,T,mstar_ntype)
     gamma_ptype = Gamma_ptype_InAsSbP(x,y,N0,T,mstar_ptype)
@@ -329,7 +353,7 @@ precompile(eVtoOmega, (Float64,))
 
     #adding IB or no IB. IB - epsinf since I don't want to double count
     #if(E_photon>InAsSbPstruct.E0_InAsSbP)
-    return epsIB(eVtoOmega(E_photon),InAsSbPstruct.N0,InAsSbPstruct.T,InAsSbPstruct.E0_InAsSbP,InAsSbPstruct.epsinf,InAsSbPstruct.P,InAsSbPstruct.mstar_ptype_hh,InAsSbPstruct.mstar_ptype_lh,InAsSbPstruct.F,0.0) - InAsSbPstruct.epsinf  + epsFCL_InAsSbP(InAsSbPstruct.x,InAsSbPstruct.y,eVtoOmega(E_photon),InAsSbPstruct.mstar_ntype,InAsSbPstruct.gamma_ntype,InAsSbPstruct.N0,InAsSbPstruct.epsinf)
+    return epsIB(eVtoOmega(E_photon),InAsSbPstruct.N0,InAsSbPstruct.T,InAsSbPstruct.E0_InAsSbP,InAsSbPstruct.epsinf,InAsSbPstruct.P,InAsSbPstruct.mstar_ptype_hh,InAsSbPstruct.mstar_ptype_lh,InAsSbPstruct.F,0.0) - InAsSbPstruct.epsinf  + epsFCL_InAsSbP(InAsSbPstruct.x,InAsSbPstruct.y,eVtoOmega(E_photon),InAsSbPstruct.mstar_ntype,InAsSbPstruct.gamma_ntype,InAsSbPstruct.N0,InAsSbPstruct.epsinf,InAsSbPstruct.F - InAsSbPstruct.E0_InAsSbP,InAsSbPstruct.E0_InAsSbP,InAsSbPstruct.T,0)
     #else
     #return epsIB(eVtoOmega(E_photon),InAsSbPstruct.N0,InAsSbPstruct.T,InAsSbPstruct.E0_InAsSbP,InAsSbPstruct.epsinf,InAsSbPstruct.P,InAsSbPstruct.mstar_ptype_hh,InAsSbPstruct.mstar_ptype_lh,InAsSbPstruct.F,0.0)
     #end
@@ -341,7 +365,7 @@ precompile(eps_InAsSbP_xy_ntype,(Float64,InAsSbPDsc))
     
     #adding the IB and FCL to eps
     #if(E_photon>InAsSbPstruct.E0_InAsSbP)
-    return epsIB(eVtoOmega(E_photon),InAsSbPstruct.N0,InAsSbPstruct.T,InAsSbPstruct.E0_InAsSbP,InAsSbPstruct.epsinf,InAsSbPstruct.P,InAsSbPstruct.mstar_ptype_hh,InAsSbPstruct.mstar_ptype_lh,InAsSbPstruct.F,1.0) - InAsSbPstruct.epsinf + epsFCL_InAsSbP(InAsSbPstruct.x,InAsSbPstruct.y,eVtoOmega(E_photon),InAsSbPstruct.mstar_ptype,InAsSbPstruct.gamma_ptype,InAsSbPstruct.N0,InAsSbPstruct.epsinf)
+    return epsIB(eVtoOmega(E_photon),InAsSbPstruct.N0,InAsSbPstruct.T,InAsSbPstruct.E0_InAsSbP,InAsSbPstruct.epsinf,InAsSbPstruct.P,InAsSbPstruct.mstar_ptype_hh,InAsSbPstruct.mstar_ptype_lh,InAsSbPstruct.F,1.0) - InAsSbPstruct.epsinf + epsFCL_InAsSbP(InAsSbPstruct.x,InAsSbPstruct.y,eVtoOmega(E_photon),InAsSbPstruct.mstar_ptype,InAsSbPstruct.gamma_ptype,InAsSbPstruct.N0,InAsSbPstruct.epsinf,InAsSbPstruct.F - InAsSbPstruct.E0_InAsSbP,InAsSbPstruct.E0_InAsSbP,InAsSbPstruct.T,1)
     #else
     #    return epsFCL_InAsSbP(InAsSbPstruct.x,InAsSbPstruct.y,eVtoOmega(E_photon),InAsSbPstruct.mstar_ptype,InAsSbPstruct.gamma_ptype,InAsSbPstruct.N0,InAsSbPstruct.epsinf)
     #end
@@ -377,7 +401,7 @@ precompile(eps_InAsSbP_imag_xy_ntype,(Float64,InAsSbPDsc))
 
 
 
-@inline function epsFCL_InAsSbP(x,y,omega,mstar,gamma,N_base,eps_inf)
+@inline function epsFCL_InAsSbP(x,y,omega,mstar,gamma,N_base,eps_inf,F,Eg,T,p)
     #calculating the free carrier and lattice effects for InAsSbP
 
     #eps,gamma parameters from Sadao Adachi: Optical Properties of Crystalline and Amorphous Semiconductors (1999)
@@ -405,8 +429,19 @@ precompile(eps_InAsSbP_imag_xy_ntype,(Float64,InAsSbPDsc))
     
     o_p_square=N_base*e^2/(eps_0*eps_inf*mstar) #s^(-2)
     
-    #first term is free carrier effect, the rest are the lattice effects, weiighted by the atom fraction
-    return eps_inf*(1.0 - o_p_square/(omega*(omega+ im*gamma)) + x*(o_LO_InAs^2-o_TO_InAs^2)/(o_TO_InAs^2-omega^2-im*omega*g_InAs)+y*(o_LO_InSb^2-o_TO_InSb^2)/(o_TO_InSb^2-omega^2-im*omega*g_InSb)+(1-x-y)*(o_LO_InP^2-o_TO_InP^2)/(o_TO_InP^2-omega^2-im*omega*g_InP))
+    eps_L = eps_inf*(x*(o_LO_InAs^2-o_TO_InAs^2)/(o_TO_InAs^2-omega^2-im*omega*g_InAs)+y*(o_LO_InSb^2-o_TO_InSb^2)/(o_TO_InSb^2-omega^2-im*omega*g_InSb)+(1-x-y)*(o_LO_InP^2-o_TO_InP^2)/(o_TO_InP^2-omega^2-im*omega*g_InP))
+    eps_Drude = eps_inf*(-o_p_square/(omega*(omega+ im*gamma)))
+    if(F < kb*T || p == 1) #for th low doping case
+        eps_FC = eps_Drude
+    else
+        eps_FC_R=eps_Drude.re #computing the real part of the permittivity
+		eps_FC_I=eps_FC_I_calc(omega,F,eps_inf,eps_0,e,N_base,hbar_eV,m_0,o_p_square,Eg,eps_Drude,gamma) #computing the imaginary part of the permittivity
+		eps_FC=eps_FC_R+im*eps_FC_I
+    end
+    return eps_inf_InAs + eps_FC + eps_L
+
+    #first term is free carrier effect, the rest are the lattice effects, weiighted by the atom fraction 
+    #return eps_inf*(1.0 - o_p_square/(omega*(omega+ im*gamma)) + x*(o_LO_InAs^2-o_TO_InAs^2)/(o_TO_InAs^2-omega^2-im*omega*g_InAs)+y*(o_LO_InSb^2-o_TO_InSb^2)/(o_TO_InSb^2-omega^2-im*omega*g_InSb)+(1-x-y)*(o_LO_InP^2-o_TO_InP^2)/(o_TO_InP^2-omega^2-im*omega*g_InP))
 end
-precompile(epsFCL_InAsSbP,(Float64,Float64,Float64,Float64,Float64,Float64))
+precompile(epsFCL_InAsSbP,(Float64,Float64,Float64,Float64,Float64,Float64,Float64,Float64,Int))
 end

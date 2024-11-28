@@ -11,7 +11,7 @@ const e = 1.602*^(10,-19)
 const eV = 1.60218*^(10,-19)
 const hbar = 1.05457*^(10,-34) #m2kg/s
 const hbEV = 6.5821*^(10,-16) #eV s
-function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCell::Int, divPCell::Int, divSubCell::Int, firstGap::Float64, thckRad::Float64, distGap::Float64, thckProt::Float64, thckInAs::Float64, thckInAsSbP::Float64, thckSub::Float64, Si_ndoping::Float64, prot_ndoping::Float64, ndoping_InAs::Float64, pdoping_InAs::Float64, substrate_doping::Float64, quat_x::Float64, prot_quat_x::Float64, mboxProt::Float64, mboxN::Float64, mboxP::Float64, mboxSub::Float64,xMinProt::Float64, xMinN::Float64, xMinP::Float64, xMinSub::Float64, Heat_or_Photon::Int)
+function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCell::Int, divPCell::Int, divBSFCell::Int, divSubCell::Int, firstGap::Float64, thckRad::Float64, distGap::Float64, thckProt::Float64, thckInAs::Float64, thckInAsSbP::Float64, thckBSF::Float64, thckSub::Float64, Si_ndoping::Float64, prot_ndoping::Float64, ndoping_InAs::Float64, pdoping_InAs::Float64, doping_BSF::Float64, substrate_doping::Float64, quat_x::Float64, prot_quat_x::Float64, quat_BSF_x::Float64, mboxProt::Float64, mboxN::Float64, mboxP::Float64, mboxSub::Float64,xMinProt::Float64, xMinN::Float64, xMinP::Float64, xMinSub::Float64, Heat_or_Photon::Int)
 ### Settings
 	# Total number of layers. + divide radiator to no more than 10 um thick slices
 	if firstGap == 0.0
@@ -19,10 +19,10 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 		divRad = 1
 	else
 		numExtraLayers = 5
-		divRad =Int(ceil(thckRad/10.0))
+		divRad =1#Int(ceil(thckRad/10.0))
 	end
 	numExtraLayers += divRad -1
-	numLayers = divProtCell + divNCell + divPCell + divSubCell + numExtraLayers
+	numLayers = divProtCell + divNCell + divPCell + divBSFCell + divSubCell + numExtraLayers
 	## Temperature list of the layers.
 	tmpLst = fill(tBck, numLayers)
 	# Set temperature of the emitter.
@@ -70,10 +70,16 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 
 		bdrLoc[numExtraLayers - 1 + divNCell + divProtCell + ind] = bdrLoc[numExtraLayers - 2 + divNCell + divProtCell + ind] + thckInAsSbP/divPCell
 	end
+
+	# Fill boundaries of BSF layer 
+	for ind = 1 : divBSFCell
+
+		bdrLoc[numExtraLayers - 1 + divPCell + divNCell + divProtCell + ind] = bdrLoc[numExtraLayers - 2 + divNCell + divPCell + divProtCell + ind] + thckBSF/divBSFCell
+	end
 	#
 	# Fill boundaries for substrate
 	for ind = 0 : divSubCell - 1
-		bdrLoc[numExtraLayers + divNCell + divPCell + divProtCell + ind] = bdrLoc[numExtraLayers - 1 + divNCell + divPCell + divProtCell + ind] + xMinSub*(mboxSub^ind)
+		bdrLoc[numExtraLayers + divBSFCell + divNCell + divPCell + divProtCell + ind] = bdrLoc[numExtraLayers - 1 + divBSFCell + divNCell + divPCell + divProtCell + ind] + xMinSub*(mboxSub^ind)
 	end
 	#=
 	for ind = 1 : divSubCell
@@ -146,6 +152,17 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 	eps_base_p_imag(enr) = imag(eps_InAsSbP_xy_ptype(enr,InAsSbPstructure))
 	
 
+	# bsf layer
+	InAsSbPstructure_BSF = InAsSbP_struct(quat_BSF_x,0.311*(1 - quat_BSF_x),abs(doping_BSF),300.0)
+	#n-type
+	eps_bsf_n(enr) = eps_InAsSbP_xy_ntype(enr,InAsSbPstructure_BSF)
+	abs_bsf_n_IBimag(enr) = /(eps_InAsSbP_imag_xy_ntype(enr,InAsSbPstructure_BSF), enr)
+	eps_bsf_n_imag(enr) = imag(eps_InAsSbP_xy_ntype(enr,InAsSbPstructure_BSF))
+	#p-type
+	eps_bsf_p(enr) = eps_InAsSbP_xy_ptype(enr,InAsSbPstructure_BSF)
+	abs_bsf_p_IBimag(enr) = /(eps_InAsSbP_imag_xy_ptype(enr,InAsSbPstructure_BSF), enr)
+	eps_bsf_p_imag(enr) = imag(eps_InAsSbP_xy_ptype(enr,InAsSbPstructure_BSF))
+
 	eps_gold_imag(enr) = imag(epsgold(enr))
 	# InAs subtrate doping and temperature
 	pInAs_param = eps_InAs_struct(abs(substrate_doping),300.0)
@@ -168,8 +185,10 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 		push!(optRsp, siRspE, gRsp) 
 		push!(trfFacs, siAbsE, gAbs)
 	else
-		push!(optRsp, siRspE_top, gRsp) 
-		push!(trfFacs, siAbsE_top, gRsp)
+		#push!(optRsp, siRspE_top, gRsp) 
+		#push!(trfFacs, siAbsE_top, gAbs)
+		push!(optRsp, gRsp, gRsp) 
+		push!(trfFacs, gAbs, gAbs)
 		for ind = 1 : divRad
 			push!(optRsp, siRspE) 
 			push!(trfFacs, siAbsE)
@@ -241,6 +260,27 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 			end
 		end
 	end
+	# bsf layer of PV cell. InAsSbP
+	for ind = 1 : divBSFCell
+		
+		if abs(doping_BSF) == doping_BSF
+			push!(optRsp, eps_bsf_n)
+			if Heat_or_Photon == 0
+				#checks heat transfer or photon count calculation  
+				push!(trfFacs,eps_bsf_n_imag)
+			else
+				push!(trfFacs, abs_bsf_n_IBimag)
+			end
+		else
+			push!(optRsp, eps_bsf_p)
+			if Heat_or_Photon == 0
+				#checks heat transfer or photon count calculation  
+				push!(trfFacs,eps_bsf_p_imag)
+			else
+				push!(trfFacs, abs_bsf_p_IBimag)
+			end
+		end
+	end
 	# substrate of PV cell, InAs. Also add the backing layer.
 	for ind = 1 : divSubCell + 1
 
@@ -272,9 +312,9 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 
 	## Set which layers transmission should be calculated for
 	if Heat_or_Photon == 0 || thckSub >= 5000.0
-		NumberlPairs = divProtCell + divNCell + divPCell + divSubCell + 1
+		NumberlPairs = divProtCell + divNCell + divPCell + divBSFCell + divSubCell + 1
 	else 
-		NumberlPairs = divProtCell + divNCell + divPCell + divSubCell 
+		NumberlPairs = divProtCell + divNCell + divPCell + divBSFCell + divSubCell 
 	end
 	lPairs = Array{Int64,2}(undef, 2, NumberlPairs*divRad)
 	#  layer pairs.
@@ -289,4 +329,4 @@ function uOttawaSlabs_v3(tEmit::Float64, tBck::Float64, divProtCell::Int, divNCe
 	# Build layer description for heat transfer code.
 	return (lyrDsc(bdrLoc, tmpLst, optRsp, trfFacs),lPairs)
 end
-precompile(uOttawaSlabs_v3, (Float64, Float64, Int, Int, Int, Int,Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Int))
+precompile(uOttawaSlabs_v3, (Float64, Float64, Int, Int, Int, Int, Int, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Int))
